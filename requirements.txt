@@ -1,0 +1,8 @@
+# Runtime
+PyYAML>=6.0
+
+# Optional but recommended: validates stage handoffs against schemas/
+jsonschema>=4.0
+
+# Development
+pytest>=7.0

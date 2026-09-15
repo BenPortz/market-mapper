@@ -1,0 +1,164 @@
+{
+  "date": "2026-03-14",
+  "_note": "Fabricated records for tests and the example report. Every company, domain, and registry number here is invented. Each record is shaped to exercise a different merge or filter path.",
+  "searches": {
+    "dental_xray_buyers": {
+      "status": "ok",
+      "sources": [
+        { "type": "npi", "status": "ok", "count": 5 },
+        { "type": "osm", "status": "ok", "count": 3 }
+      ],
+      "records": [
+        {
+          "record_id": "npi:1000000001", "source": "npi",
+          "name": "Pinecone Family Dental LLC", "legal_name": null, "website": null,
+          "address": { "street": "100 Example Ave", "city": "Bend", "region": "OR", "postal_code": "97701", "country": "US" },
+          "phone": "541-555-0100", "categories": ["Dentist"],
+          "evidence": [
+            { "kind": "registry", "detail": "NPI 1000000001", "url": "https://example.invalid/npi/1000000001" },
+            { "kind": "registered", "date": "2025-11-02", "detail": "NPI enumerated 2025-11-02", "url": "https://example.invalid/npi/1000000001" }
+          ]
+        },
+        {
+          "record_id": "osm:node/501", "source": "osm",
+          "name": "Pinecone Family Dental", "legal_name": null,
+          "website": "https://www.pineconefamilydental.example/",
+          "address": { "street": null, "city": "Bend", "region": "OR", "postal_code": null, "country": null },
+          "phone": null, "categories": ["amenity=dentist"],
+          "evidence": [ { "kind": "map_listing", "detail": "OpenStreetMap node/501", "url": "https://example.invalid/osm/501" } ],
+          "site": {
+            "url": "https://www.pineconefamilydental.example/", "title": "Pinecone Family Dental | Bend, Oregon",
+            "description": "Family and cosmetic dentistry in Bend.",
+            "text": "Now open in Bend! Pinecone Family Dental is a new family practice with four operatories. We offer cleanings, fillings, crowns, and emergency care for the whole family. Located on Example Ave, Bend, Oregon.",
+            "pages": ["https://www.pineconefamilydental.example/"], "error": null
+          }
+        },
+        {
+          "record_id": "npi:1000000002", "source": "npi",
+          "name": "Willamette Dental School Clinic", "legal_name": null, "website": null,
+          "address": { "street": null, "city": "Portland", "region": "OR", "postal_code": "97201", "country": "US" },
+          "phone": null, "categories": ["Dentist"],
+          "evidence": [ { "kind": "registered", "date": "2025-10-01", "detail": "NPI enumerated 2025-10-01" } ]
+        },
+        {
+          "record_id": "npi:1000000003", "source": "npi",
+          "name": "Riverbend Orthodontics PC", "legal_name": null, "website": null,
+          "address": { "street": null, "city": "Eugene", "region": "OR", "postal_code": "97401", "country": "US" },
+          "phone": null, "categories": ["Orthodontics"],
+          "evidence": [ { "kind": "registered", "date": "2012-05-01", "detail": "NPI enumerated 2012-05-01" } ]
+        },
+        {
+          "record_id": "osm:node/502", "source": "osm",
+          "name": "Pacific Smiles", "legal_name": null, "website": "https://pacificsmiles.example/",
+          "address": { "street": null, "city": "Vancouver", "region": "WA", "postal_code": null, "country": null },
+          "phone": null, "categories": ["amenity=dentist"],
+          "evidence": [],
+          "site": { "url": "https://pacificsmiles.example/", "title": "Pacific Smiles", "description": "",
+                    "text": "Grand opening of our new office this spring.", "pages": [], "error": null }
+        },
+        {
+          "record_id": "npi:1000000004", "source": "npi",
+          "name": "Example Customer Dental Group", "legal_name": null, "website": null,
+          "address": { "street": null, "city": "Salem", "region": "OR", "postal_code": "97301", "country": "US" },
+          "phone": null, "categories": ["Dentist"],
+          "evidence": [ { "kind": "registered", "date": "2025-12-01", "detail": "NPI enumerated 2025-12-01" } ]
+        },
+        {
+          "record_id": "npi:1000000005", "source": "npi",
+          "name": "High Desert Endodontics PLLC", "legal_name": null, "website": null,
+          "address": { "street": null, "city": "Redmond", "region": "OR", "postal_code": "97756", "country": "US" },
+          "phone": "541-555-0105", "categories": ["Endodontics"],
+          "evidence": [ { "kind": "registered", "date": "2026-01-15", "detail": "NPI enumerated 2026-01-15", "url": "https://example.invalid/npi/1000000005" } ]
+        },
+        {
+          "record_id": "osm:way/503", "source": "osm",
+          "name": "Harbor Dental", "legal_name": null, "website": "https://harbordental.example/",
+          "address": { "street": null, "city": null, "region": null, "postal_code": null, "country": null },
+          "phone": null, "categories": ["amenity=dentist"],
+          "evidence": [],
+          "site": { "url": "https://harbordental.example/", "title": "Harbor Dental", "description": "",
+                    "text": "Now open. Gentle care by the water.", "pages": [], "error": null }
+        }
+      ]
+    },
+    "conveyor_manufacturers": {
+      "status": "partial",
+      "sources": [
+        { "type": "web_search", "status": "ok", "count": 5 },
+        { "type": "csv", "status": "ok", "count": 3 },
+        { "type": "osm", "status": "failed", "count": 0, "error": "request failed for https://overpass-api.de/api/interpreter: timed out" }
+      ],
+      "records": [
+        {
+          "record_id": "web_search:lakeshoreconveyor.example", "source": "web_search",
+          "name": "Lakeshore Conveyor Systems", "legal_name": null, "website": "https://lakeshoreconveyor.example/",
+          "address": { "street": null, "city": null, "region": null, "postal_code": null, "country": null },
+          "phone": null, "categories": [],
+          "evidence": [ { "kind": "search_result", "detail": "\"conveyor systems manufacturer Michigan\"", "url": "https://lakeshoreconveyor.example/", "snippet": "Custom conveyor systems for food and beverage plants." } ],
+          "site": {
+            "url": "https://lakeshoreconveyor.example/", "title": "Lakeshore Conveyor Systems | Custom Food Grade Conveyors",
+            "description": "Design and fabrication of sanitary conveyors.",
+            "text": "Lakeshore designs and fabricates custom sanitary conveyor systems for food, beverage, and packaging lines. In-house engineering and a 60,000 sq ft fabrication shop in Grand Rapids, Michigan.",
+            "pages": ["https://lakeshoreconveyor.example/", "https://lakeshoreconveyor.example/about"], "error": null
+          }
+        },
+        {
+          "record_id": "csv:members:1", "source": "csv",
+          "name": "Lakeshore Conveyor Systems, Inc.", "legal_name": null, "website": "https://www.lakeshoreconveyor.example",
+          "address": { "street": null, "city": "Grand Rapids", "region": "MI", "postal_code": "49503", "country": "US" },
+          "phone": "616-555-0101", "categories": ["Food handling conveyors"],
+          "evidence": [ { "kind": "list_member", "detail": "Conveyor trade association member list" } ]
+        },
+        {
+          "record_id": "web_search:beltworks.example", "source": "web_search",
+          "name": "BeltWorks Repair", "legal_name": null, "website": "https://beltworks.example/",
+          "address": { "street": null, "city": null, "region": null, "postal_code": null, "country": null },
+          "phone": null, "categories": [],
+          "evidence": [ { "kind": "search_result", "detail": "\"conveyor belt manufacturer Ohio\"", "url": "https://beltworks.example/" } ],
+          "site": { "url": "https://beltworks.example/", "title": "BeltWorks", "description": "",
+                    "text": "Conveyor belt repair and splicing. We also buy and sell used conveyor equipment across Ohio.", "pages": [], "error": null }
+        },
+        {
+          "record_id": "web_search:packline.example", "source": "web_search",
+          "name": "Packline Automation", "legal_name": null, "website": "https://packline.example/",
+          "address": { "street": null, "city": null, "region": null, "postal_code": null, "country": null },
+          "phone": null, "categories": [],
+          "evidence": [ { "kind": "search_result", "detail": "\"conveyor systems manufacturer Columbus Ohio\"", "url": "https://packline.example/" } ],
+          "site": { "url": "https://packline.example/", "title": "Packline Automation", "description": "Packaging line integration.",
+                    "text": "We build packaging conveyor lines, case packers, and palletizing cells for pharmaceutical and consumer goods plants. Headquartered in Columbus, Ohio.", "pages": [], "error": null }
+        },
+        {
+          "record_id": "web_search:grainmove.example", "source": "web_search",
+          "name": "GrainMove Bulk Handling", "legal_name": null, "website": "https://grainmove.example/",
+          "address": { "street": null, "city": null, "region": null, "postal_code": null, "country": null },
+          "phone": null, "categories": [],
+          "evidence": [ { "kind": "search_result", "detail": "\"conveyor belt manufacturer Indiana\"", "url": "https://grainmove.example/" } ],
+          "site": { "url": "https://grainmove.example/", "title": "GrainMove", "description": "",
+                    "text": "Heavy-duty bulk conveyor and bucket elevator systems for grain handling and aggregate mining operations.", "pages": [], "error": null }
+        },
+        {
+          "record_id": "web_search:rollerpro.example", "source": "web_search",
+          "name": "RollerPro", "legal_name": null, "website": "https://rollerpro.example/",
+          "address": { "street": null, "city": null, "region": null, "postal_code": null, "country": null },
+          "phone": null, "categories": [],
+          "evidence": [ { "kind": "search_result", "detail": "\"conveyor belt manufacturer Ohio\"", "url": "https://rollerpro.example/", "snippet": "RollerPro builds gravity and powered roller conveyors in Toledo, Ohio." } ],
+          "site": { "url": "https://rollerpro.example/", "title": "", "description": "", "text": "", "pages": [], "error": "blocked by robots.txt: https://rollerpro.example/" }
+        },
+        {
+          "record_id": "csv:members:2", "source": "csv",
+          "name": "Ohio Valley Conveyor", "legal_name": null, "website": null,
+          "address": { "street": null, "city": "Dayton", "region": "OH", "postal_code": null, "country": "US" },
+          "phone": null, "categories": ["Conveyors"],
+          "evidence": [ { "kind": "list_member", "detail": "Conveyor trade association member list" } ]
+        },
+        {
+          "record_id": "csv:members:3", "source": "csv",
+          "name": "Lone Star Conveyor", "legal_name": null, "website": "https://lonestarconveyor.example/",
+          "address": { "street": null, "city": "Houston", "region": "TX", "postal_code": null, "country": "US" },
+          "phone": null, "categories": ["Conveyors"],
+          "evidence": [ { "kind": "list_member", "detail": "Conveyor trade association member list" } ]
+        }
+      ]
+    }
+  }
+}

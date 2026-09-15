@@ -1,0 +1,147 @@
+# Market Mapper profile. Copy to config/profile.yaml and edit.
+#
+# A profile has two halves:
+#   context   - who is selling (files the judge reads, and nothing else does)
+#   searches  - what to find: a market, a region, where to look, what qualifies
+#
+# config/profile.yaml is gitignored: real target markets, customer names, and
+# exclusion lists stay local.
+#
+# This example belongs to a fictional seller, Acme Radiography, which sells and
+# services x-ray equipment in two markets: digital x-ray for dental practices,
+# and inline x-ray inspection systems that bolt onto production conveyors.
+
+# --- Context ---------------------------------------------------------------
+# Everything the judge may say about the seller comes from these files. If a
+# claim is not written here, it cannot appear in a report or a draft.
+context:
+  - context/company.md          # what the company sells and how
+  - context/ideal_customer.md   # who buys, who does not, and why
+  - context/proof.md            # results that can be backed up, each with an id
+  - context/constraints.md      # what must never be claimed or promised
+
+# --- Network etiquette -----------------------------------------------------
+http:
+  # Identify yourself. Put a real contact URL here for production runs.
+  user_agent: "market-mapper/0.1 (company research; respects robots.txt)"
+  min_interval_seconds: 1.0     # per host
+
+# --- Global filters --------------------------------------------------------
+filters:
+  # Never surface these: current customers, open deals, competitors, partners.
+  # Matched on normalized name (suffixes like LLC and punctuation ignored).
+  exclude_companies:
+    - "Example Customer Dental Group"
+  exclude_domains:
+    - "example-competitor.com"
+
+  # Which filters actually drop an account. Evaluated filters not listed here
+  # are reported to the judge as information, not knockouts.
+  load_bearing: [in_region, relevant, no_exclude_terms, not_excluded, signal_ok, has_website]
+
+# --- Searches --------------------------------------------------------------
+searches:
+
+  # "Find 20 companies that buy x-ray machines in a given region."
+  dental_xray_buyers:
+    label: "Dental practices likely to buy digital x-ray (Oregon)"
+    goal: top_n
+    target_count: 20
+
+    region:
+      label: "Oregon, US"
+      countries: [US]
+      regions: [OR]              # state/province codes; addresses are matched against these
+      osm_areas: [US-OR]         # ISO 3166-2, used by the osm source
+      search_places: ["Oregon", "Portland Oregon", "Eugene Oregon", "Bend Oregon"]
+      site_terms: ["Oregon", "OR 97"]   # words on a website that place a company in-region
+
+    sources:
+      # The federal provider registry lists every dental organization by state,
+      # with the date it registered.
+      - type: npi
+        taxonomy_descriptions: ["Dentist", "Orthodontics", "Oral and Maxillofacial Surgery", "Endodontics"]
+        max_results: 1000
+      # Map listings add websites the registry does not have.
+      - type: osm
+        tags:
+          - {amenity: dentist}
+          - {healthcare: dentist}
+        max_results: 1000
+
+    # A practice that registered recently is fitting out operatories now.
+    signals:
+      registered_within_days: 540
+      site_patterns:
+        - "now open"
+        - "new (office|location)"
+        - "grand opening"
+        - "now accepting new patients"
+
+    exclude_any:                 # disqualifying words anywhere in the name, categories, or site
+      - "dental (school|college)"
+      - "university"
+      - "mobile dent"
+    min_signals: 1               # top 20 should be buyers with a reason to buy now
+    region_strict: true          # these sources all carry addresses; unknown means wrong data
+
+    enrich:
+      max_sites: 150
+      max_pages: 3
+      # find_websites: brave     # uncomment to look up sites for registry-only records
+
+    judge:
+      limit: 40                  # read twice the target so weak fits can be rejected
+      drafts: true
+
+  # "Find as many conveyor belt companies as you can."
+  conveyor_manufacturers:
+    label: "Conveyor manufacturers (Great Lakes)"
+    goal: market_map
+
+    region:
+      label: "Ohio, Michigan, Indiana, Wisconsin"
+      countries: [US]
+      regions: [OH, MI, IN, WI]
+      search_places: ["Ohio", "Michigan", "Indiana", "Wisconsin", "Cleveland", "Detroit",
+                      "Grand Rapids", "Indianapolis", "Milwaukee", "Columbus Ohio"]
+      site_terms: ["Ohio", "Michigan", "Indiana", "Wisconsin", "OH 4", "MI 4", "IN 4", "WI 5"]
+
+    sources:
+      # Search engines are the widest net for industrial manufacturers, which
+      # rarely appear in registries or on maps.
+      - type: web_search
+        provider: brave
+        queries:
+          - "conveyor belt manufacturer {place}"
+          - "conveyor systems manufacturer {place}"
+          - "custom conveyor fabrication {place}"
+        pages: 3
+      # A trade association member list or trade show exhibitor list, exported
+      # to CSV by hand. Often the most complete list that exists.
+      - type: csv
+        path: data/imports/conveyor-association-members.csv
+        label: "Conveyor trade association member list"
+
+    include_any:                 # the company's own words must say conveyor
+      - "conveyor"
+    exclude_any:
+      - "used conveyor"
+      - "conveyor belt (cleaner|repair) service"
+    require_website: true        # a market map entry you cannot visit is not useful
+    region_strict: false         # search results rarely carry addresses; the judge checks
+
+    enrich:
+      max_sites: 400
+      max_pages: 3
+
+    judge:
+      limit: 60                  # spot-check the top of the map and remove false positives
+      drafts: false
+
+# --- Dedup -----------------------------------------------------------------
+dedup:
+  # top_n searches skip companies already surfaced inside this window, so a
+  # weekly run keeps finding new buyers. Market maps never dedup: a re-run
+  # returns the whole market. Override per search with `dedup: true|false`.
+  window_days: 60

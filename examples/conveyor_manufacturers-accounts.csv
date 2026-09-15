@@ -1,0 +1,4 @@
+rank,account_id,name,website,street,city,region,postal_code,country,phone,categories,sources,signals,score,region_status,fit,fit_score,what_they_do
+1,lakeshoreconveyor-example,Lakeshore Conveyor Systems,https://www.lakeshoreconveyor.example,,Grand Rapids,MI,49503,US,616-555-0101,Food handling conveyors,csv; web_search,,5,in,strong,5,"Designs and fabricates custom sanitary conveyors for food, beverage, and packaging lines in Grand Rapids, Michigan."
+2,packline-example,Packline Automation,https://packline.example/,,,,,,,,web_search,,4,in,strong,4,"Builds packaging conveyor lines and palletizing cells for pharmaceutical and consumer goods plants in Columbus, Ohio."
+3,rollerpro-example,RollerPro,https://rollerpro.example/,,,,,,,,web_search,,2,in,possible,2,"Unverified: roller conveyor builder in Toledo, Ohio, per a search snippet. The site blocks automated reading."

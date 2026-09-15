@@ -1,0 +1,8 @@
+date,search,account_id,name,fit,fit_score,contact_role,channel,subject,body,evidence_urls,status
+2026-03-14,dental_xray_buyers,pineconefamilydental-example,Pinecone Family Dental,strong,5,Practice owner or office manager,email,Imaging for your new Bend practice,"Hello,
+
+Congratulations on opening Pinecone Family Dental. New practices often put imaging off until the schedule fills, then find the gap costs them referrals.
+
+We install digital sensors and panoramic units for dental practices, with a median of 9 business days from order to first patient image.
+
+If imaging is still on your list, would a short call next week be useful?",https://example.invalid/npi/1000000001 https://www.pineconefamilydental.example/,draft

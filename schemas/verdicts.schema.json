@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Judge verdicts: JUDGE stage output, WRITE stage input",
+  "description": "The contract between the judging model and the renderer. Validating here keeps the report and CSV exports pure formatting: drift in the model's output fails as a schema error instead of producing a broken export.",
+  "type": "object",
+  "required": ["date", "searches"],
+  "properties": {
+    "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "model": { "type": "string" },
+    "run_cost_note": { "type": "string" },
+    "searches": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/searchVerdict" }
+    }
+  },
+  "$defs": {
+    "searchVerdict": {
+      "type": "object",
+      "required": ["accounts", "rejected"],
+      "properties": {
+        "none_reason": {
+          "type": "string",
+          "description": "Why fewer accounts were kept than the target, or none at all. Expected whenever the result falls short."
+        },
+        "accounts": {
+          "type": "array",
+          "description": "Accounts the judge would contact, best first.",
+          "items": { "$ref": "#/$defs/account" }
+        },
+        "rejected": {
+          "type": "array",
+          "description": "Accounts the judge read and would not contact, each with a reason. For a market map these are removed from the export as false positives.",
+          "items": {
+            "type": "object",
+            "required": ["account_id", "reason"],
+            "properties": {
+              "account_id": { "type": "string" },
+              "name": { "type": "string" },
+              "reason": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "account": {
+      "type": "object",
+      "required": ["account_id", "fit", "fit_score", "what_they_do"],
+      "properties": {
+        "account_id": { "type": "string" },
+        "fit": {
+          "enum": ["strong", "possible"],
+          "description": "strong: matches the ideal customer file on every point that can be checked. possible: matches, with open questions named in risks."
+        },
+        "fit_score": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "what_they_do": {
+          "type": "string",
+          "description": "One or two sentences from the company's own site or listing. Says 'unverified' when there was no site to read."
+        },
+        "why_fit": {
+          "type": "array",
+          "description": "Each point cites the context record behind it (an ideal_customer section or a proof id), which keeps the model from inventing reasons or results.",
+          "items": {
+            "type": "object",
+            "required": ["text"],
+            "properties": {
+              "text": { "type": "string" },
+              "context_id": { "type": "string" }
+            }
+          }
+        },
+        "signals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["detail"],
+            "properties": { "detail": { "type": "string" }, "url": { "type": "string" } }
+          }
+        },
+        "risks": {
+          "type": ["array", "string"],
+          "items": { "type": "string" }
+        },
+        "contact_role": {
+          "type": "string",
+          "description": "The role to reach, never a named person."
+        },
+        "draft": {
+          "type": "object",
+          "required": ["channel", "body"],
+          "description": "A first draft for a person to edit. Never sent by the pipeline.",
+          "properties": {
+            "channel": { "enum": ["email", "linkedin", "phone_script"] },
+            "subject": { "type": "string" },
+            "body": { "type": "string", "maxLength": 1200 }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "date": "2026-03-14",
+  "model": "example-model",
+  "run_cost_note": "~21K tokens (est.), 2 searches, 6 accounts judged",
+  "_note": "Fabricated judge output for tests and the example report. Companies, context ids, and drafts are all invented.",
+  "searches": {
+    "dental_xray_buyers": {
+      "none_reason": "Only 2 in-region practices had a timing signal this run; the rest registered years ago or were excluded",
+      "accounts": [
+        {
+          "account_id": "pineconefamilydental-example",
+          "fit": "strong",
+          "fit_score": 5,
+          "what_they_do": "New family dental practice in Bend with four operatories offering general and emergency care.",
+          "why_fit": [
+            { "text": "Independent single-location practice that just opened, which is when imaging gets bought", "context_id": "Dental practices / Good fit" },
+            { "text": "Equipping newly opened practices, including build-out coordination, is an established service", "context_id": "dental_new_practice" }
+          ],
+          "signals": [
+            { "detail": "Registered 2025-11-02 (132 days ago)", "url": "https://example.invalid/npi/1000000001" },
+            { "detail": "Site says \"Now open\"", "url": "https://www.pineconefamilydental.example/" }
+          ],
+          "risks": [
+            "A practice that is already open may have bought imaging during build-out. The site does not say what equipment is installed.",
+            "Four operatories is small; a single sensor may be the whole order."
+          ],
+          "contact_role": "Practice owner or office manager",
+          "draft": {
+            "channel": "email",
+            "subject": "Imaging for your new Bend practice",
+            "body": "Hello,\n\nCongratulations on opening Pinecone Family Dental. New practices often put imaging off until the schedule fills, then find the gap costs them referrals.\n\nWe install digital sensors and panoramic units for dental practices, with a median of 9 business days from order to first patient image.\n\nIf imaging is still on your list, would a short call next week be useful?"
+          }
+        },
+        {
+          "account_id": "high-desert-endodontics-redmond-or",
+          "fit": "possible",
+          "fit_score": 3,
+          "what_they_do": "Unverified: endodontic practice in Redmond, per its registry listing. No website was found to confirm.",
+          "why_fit": [
+            { "text": "Endodontics is a listed good-fit specialty and the practice registered two months ago", "context_id": "Dental practices / Good fit" }
+          ],
+          "signals": [
+            { "detail": "Registered 2026-01-15 (58 days ago)", "url": "https://example.invalid/npi/1000000005" }
+          ],
+          "risks": "A new registry entry can mean an existing practice changed ownership or structure, not a new office. Confirm before pitching.",
+          "contact_role": "Practice owner"
+        }
+      ],
+      "rejected": []
+    },
+    "conveyor_manufacturers": {
+      "accounts": [
+        {
+          "account_id": "lakeshoreconveyor-example",
+          "fit": "strong",
+          "fit_score": 5,
+          "what_they_do": "Designs and fabricates custom sanitary conveyors for food, beverage, and packaging lines in Grand Rapids, Michigan.",
+          "why_fit": [
+            { "text": "Custom food and packaging conveyors with in-house engineering", "context_id": "Conveyor manufacturers / Good fit" },
+            { "text": "Candidate to quote inspection as a line item", "context_id": "conveyor_partner_program" }
+          ],
+          "risks": "May already partner with another inspection vendor."
+        },
+        {
+          "account_id": "packline-example",
+          "fit": "strong",
+          "fit_score": 4,
+          "what_they_do": "Builds packaging conveyor lines and palletizing cells for pharmaceutical and consumer goods plants in Columbus, Ohio.",
+          "why_fit": [
+            { "text": "Pharmaceutical packaging lines commonly require inspection", "context_id": "Conveyor manufacturers / Good fit" }
+          ],
+          "risks": "Primarily an integrator; unclear how much of the conveyor they fabricate themselves."
+        },
+        {
+          "account_id": "rollerpro-example",
+          "fit": "possible",
+          "fit_score": 2,
+          "what_they_do": "Unverified: roller conveyor builder in Toledo, Ohio, per a search snippet. The site blocks automated reading.",
+          "risks": "Gravity roller conveyors are often for warehousing, not production lines. Visit the site before treating as a partner."
+        }
+      ],
+      "rejected": [
+        {
+          "account_id": "grainmove-example",
+          "name": "GrainMove Bulk Handling",
+          "reason": "Bulk grain and mining conveyors, listed as a poor fit; no inspection requirement"
+        }
+      ]
+    }
+  }
+}

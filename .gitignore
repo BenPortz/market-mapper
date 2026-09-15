@@ -1,0 +1,44 @@
+# --- Private company data: NEVER commit -------------------------------------
+# Your real profile: target markets, regions, customer exclusion list.
+config/profile.yaml
+
+# Your real context files: what you sell, pricing, client results, positioning.
+context/
+
+# Everything a run produces or imports: API results, website text, accounts,
+# verdicts, reports, CSV exports, drafts, and purchased or exported lists.
+data/
+
+# Browser session state (cookies / localStorage) if you capture it locally.
+secrets/
+*.session.json
+
+# --- Secrets ---------------------------------------------------------------
+# Search API keys belong in the environment, never in a file in this repo.
+.env
+*.key
+*.pem
+*.token
+credentials*.json
+
+# --- Documents -------------------------------------------------------------
+*.pdf
+*.docx
+*.doc
+
+# --- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+.coverage
+
+# --- OS / editor -----------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+.scratch/

@@ -1,11 +1,12 @@
 """market-mapper command line.
 
-    market-mapper run          discover -> enrich -> filter -> judge -> report
+    market-mapper run          discover -> enrich -> filter -> judge -> buyers -> report
     market-mapper discover     find companies from every configured source
     market-mapper enrich       read company websites
     market-mapper filter       merge, filter, rank, queue for the judge
     market-mapper benchmark    Census coverage counts (needs CENSUS_API_KEY)
     market-mapper judge        Claude decides which companies belong (needs Claude API access)
+    market-mapper buyers       public purchase records: who buys from the listed companies
     market-mapper report       render the report and CSV exports
 
 Every stage accepts --profile, --data, and --date, and writes a dated file, so
@@ -16,7 +17,7 @@ from __future__ import annotations
 
 import sys
 
-from marketmapper import benchmark, discover, enrich, judge, pipeline, report
+from marketmapper import benchmark, buyers, discover, enrich, judge, pipeline, report
 
 STAGES = {
     "discover": discover.main,
@@ -24,15 +25,16 @@ STAGES = {
     "filter": pipeline.main,
     "benchmark": benchmark.main,
     "judge": judge.main,
+    "buyers": buyers.main,
     "report": report.main,
 }
-RUN_ORDER = ["discover", "enrich", "filter", "judge", "report"]
+RUN_ORDER = ["discover", "enrich", "filter", "judge", "buyers", "report"]
 
 
 def _shared(argv: list[str], stage: str) -> list[str]:
     """Pass only the flags a stage understands (all stages share these)."""
     out, i = [], 0
-    allowed = {"--profile", "--data", "--date"} | ({"--search"} if stage in ("discover", "judge", "benchmark") else set())
+    allowed = {"--profile", "--data", "--date"} | ({"--search"} if stage in ("discover", "judge", "benchmark", "buyers") else set())
     while i < len(argv):
         if argv[i] in allowed and i + 1 < len(argv):
             out += argv[i:i + 2]

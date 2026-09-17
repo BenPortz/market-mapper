@@ -11,7 +11,7 @@ market-mapper run --search chicago_water_valves
 
 [![tests](https://github.com/BenPortz/market-mapper/actions/workflows/tests.yml/badge.svg)](https://github.com/BenPortz/market-mapper/actions/workflows/tests.yml)
 
-**See it on real data:** [`examples/chicago-water-valves/`](examples/chicago-water-valves/) maps the water valve manufacturers in the Chicago metro. Web search alone found 9; adding certification and OSHA records found 14, with headcounts, and the judge explains each of the 14 companies it rejected.
+**See it on real data:** [`examples/chicago-water-valves/`](examples/chicago-water-valves/) maps the water valve manufacturers in the Chicago metro. Web search alone found 9; adding certification and OSHA records found 14, with headcounts, and the judge explains each of the 14 companies it rejected. Federal contract records then show who buys valves in the region, and through which distributors.
 
 ---
 
@@ -47,6 +47,17 @@ Search engines rank by traffic, so the same well-known brands fill every results
 
 On a Chicago water valve search, adding the two coverage sources to the same web search candidates took the list from 9 to 14 manufacturers. The new names included a 180-person flush valve plant and two valve makers with under 40 employees, none of which appeared in any search result. It also confirmed which brand offices actually have local manufacturing.
 
+## Who buys: public purchase records
+
+A list of companies answers "who could I sell to." A salesperson also wants to know who those companies sell to, and who buys this kind of product at all. Most business-to-business sales leave no public record, but government purchasing does. `market-mapper buyers` reads the finished list and looks up:
+
+- **Each listed company as a vendor** in federal contract awards (USAspending.gov, no key) and in city, county, or state contracts published on any Socrata open data portal.
+- **The market as a whole:** awards for the search's NAICS codes and product keywords, delivered in the search region.
+
+The report gains a "Who buys" section with the listed companies that sell to public buyers, the largest buyers, and the vendors those buyers pay who are **not** on the list, which are usually the distributors and competitors a salesperson needs to know about. Every purchase is exported to `<search>-purchases.csv` with a link to its source record.
+
+Matching purchase records to companies is where this goes wrong quietly, so it is strict: a vendor must contain every word of the company's name after legal suffixes, abbreviations ("MFG"), and plurals are normalized. An early version matched on distinctive words only and credited a Chicago valve company with $2.9 billion that belonged to an ad agency and a university; those names are now regression tests.
+
 ---
 
 ## Architecture
@@ -56,10 +67,12 @@ flowchart LR
     A[DISCOVER<br/><i>APIs, lists</i>] -->|discovered.json| B[ENRICH<br/><i>read websites</i>]
     B -->|enriched.json| C[FILTER<br/><i>plain Python</i>]
     C -->|accounts.json| D[JUDGE<br/><i>LLM, no tools</i>]
-    D -->|verdicts.json| E[WRITE<br/><i>plain Python</i>]
+    D -->|verdicts.json| B2[BUYERS<br/><i>public purchases</i>]
+    B2 -->|buyers.json| E[WRITE<br/><i>plain Python</i>]
     E --> F[report.md]
     E --> G[accounts.csv]
     E --> H[queue.csv]
+    E --> I[purchases.csv]
 ```
 
 | Stage | Runs as | Why it is separate |
@@ -68,6 +81,7 @@ flowchart LR
 | **ENRICH** | Python, bounded fetches | A registry says a company exists; its website says what it actually does |
 | **FILTER** | Pure Python | Merging, region checks, keywords, exclusions, and ranking are rules. Rules belong in code, where they are reproducible and testable. |
 | **JUDGE** | Claude API, no tools | Deciding whether a company really fits *your* offer is the only step that needs judgment |
+| **BUYERS** | Python against public APIs | Purchase records are facts to look up, not judgments; the list is never changed by them |
 | **WRITE** | Pure Python | The report and CSVs render from data, so their structure never drifts |
 
 ### Why the stages are separate
@@ -144,6 +158,7 @@ market-mapper enrich
 market-mapper filter
 market-mapper judge --dry-run       # shows how much would be sent, calls nothing
 market-mapper judge
+market-mapper buyers                # needs a buyers: section on the search
 market-mapper report
 ```
 
@@ -167,6 +182,7 @@ marketmapper/
   pipeline.py      FILTER: merge records into accounts, filter, rank, queue for the judge
   report.py        WRITE: report, accounts CSV, drafts CSV, index
   judge.py         JUDGE: Claude API call, structured output, and the checks around it
+  buyers.py        BUYERS: federal and city purchase records, vendor matching, summaries
   benchmark.py     COVERAGE: Census establishment counts to measure a list against
   config.py        Profile loading and validation
   __main__.py      The market-mapper command
@@ -175,7 +191,7 @@ marketmapper/
 config/            Example profile (real one gitignored)
 context.example/   Example seller context for a fictional company
 prompts/judge.md   The judge stage as instructions for an interactive agent
-tests/             215 tests, no network or API keys, fabricated fixtures
+tests/             240 tests, no network or API keys, fabricated fixtures
 examples/          A real run: Chicago water valve manufacturers
 ```
 

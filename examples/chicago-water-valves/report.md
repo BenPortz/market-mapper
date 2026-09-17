@@ -49,5 +49,38 @@ _Removed by the judge as not actually in this market (14):_
 - Magnet-Schultz of America: Solenoids and electromechanical products; no water valves shown.
 - Henry Pratt Company: Makes water valves, but the source note reports its Aurora plant closed in 2022 and moved to Kimball, TN.
 
+### Who buys
+
+Public purchase records: usaspending 100.
+
+**Listed companies seen as a direct vendor: 0 of 14.**
+
+Largest buyers in these records:
+
+| Buyer | Spend | Purchases | Paid |
+|---|---|---|---|
+| Department of Defense / Defense Logistics Agency | $16,423,955 | 81 | AAR SUPPLY CHAIN, INC, AM GENERAL LLC, BECKER AND ASSOCIATES, INC. +19 |
+| Department of Defense / Department of the Navy | $4,396,191 | 15 | BALLCO MANUFACTURING COMPANY, INC., BOWMAR LLC, EVAC NORTH AMERICA INC +6 |
+| Department of Defense / Department of the Army | $2,511,017 | 1 | BOSCH REXROTH CORPORATION |
+| Department of Defense / Department of the Air Force | $2,066,519 | 1 | GRISWOLD INDUSTRIES |
+| Department of Defense / Defense Contract Management Agency | $814,434 | 2 | BALLCO MANUFACTURING COMPANY, INC., REXNORD INDUSTRIES, LLC |
+
+Vendors these buyers paid that are not on the list (often distributors or competitors):
+
+| Vendor | Spend | Purchases |
+|---|---|---|
+| ELKHART BRASS MANUFACTURING COMPANY, LLC | $3,931,885 | 11 |
+| EVAC NORTH AMERICA INC | $2,884,945 | 17 |
+| HOOSIER INDUSTRIAL SUPPLY, INC | $2,764,804 | 14 |
+| BOSCH REXROTH CORPORATION | $2,511,017 | 1 |
+| AAR SUPPLY CHAIN, INC | $2,494,373 | 11 |
+| BLUE CORD LOGISTIC STRATEGIES INC | $2,066,844 | 11 |
+| GRISWOLD INDUSTRIES | $2,066,519 | 1 |
+| BALLCO MANUFACTURING COMPANY, INC. | $1,769,125 | 8 |
+| W S DARLEY & CO | $663,850 | 1 |
+| REXNORD INDUSTRIES, LLC | $624,934 | 1 |
+
+_Public purchases only: government contracts and published city contracts. Most business-to-business sales leave no public record, so absence here does not mean a company has no customers._
+
 ---
 **Run cost:** ~30K tokens (est.) judging 28 accounts. Sources: web search candidates gathered by the same agent, NSF certification listings, and OSHA 300A filings. · model: claude-opus-5

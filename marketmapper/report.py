@@ -49,6 +49,11 @@ ACCOUNT_COLUMNS = [
     "region_status",
     "fit", "fit_score", "what_they_do",
 ]
+PURCHASE_COLUMNS = [
+    "source", "buyer", "buyer_unit", "vendor", "listed_company", "description", "amount", "date",
+    "award_id", "url",
+]
+BUYER_ROWS = 10
 QUEUE_COLUMNS = [
     "date", "search", "account_id", "name", "fit", "fit_score", "contact_role",
     "channel", "subject", "body", "evidence_urls", "status",
@@ -176,8 +181,48 @@ def coverage_line(bench: dict[str, Any] | None, found: int) -> str | None:
             f"so the real target is smaller than {total}.")
 
 
+def _money(value: float) -> str:
+    return f"${value:,.0f}"
+
+
+def render_buyers(buyers: dict[str, Any]) -> str:
+    """Who buys from the listed companies, who buys in the market, and who else they pay."""
+    s = buyers.get("summary") or {}
+    srcs = ", ".join(f"{x['label']} {x['count']}" if x["status"] == "ok" else f"{x['label']} FAILED"
+                     for x in buyers.get("sources", []))
+    lines = ["### Who buys\n", f"Public purchase records: {srcs or 'none'}.", ""]
+    failed = [x for x in buyers.get("sources", []) if x["status"] != "ok"]
+    for x in failed:
+        lines.append(f"- **Source failed ({x['label']}):** {x.get('error', 'unknown error')[:160].rstrip('.')}.")
+    if failed:
+        lines.append("")
+    checked, found = buyers.get("companies_checked", 0), s.get("by_company", {})
+    lines.append(f"**Listed companies seen as a direct vendor: {len(found)} of {checked}.**\n")
+    for c in sorted(found.values(), key=lambda c: -c["total"]):
+        top = "; ".join(f"{b['buyer']} ({_money(b['total'])})" for b in c["buyers"][:3])
+        lines.append(f"- **{c['name']}:** {_money(c['total'])} across {c['count']} purchases. {top}")
+    if found:
+        lines.append("")
+    if s.get("top_buyers"):
+        lines += ["Largest buyers in these records:\n", "| Buyer | Spend | Purchases | Paid |", "|---|---|---|---|"]
+        for b in s["top_buyers"][:BUYER_ROWS]:
+            paid = ", ".join(b["vendors"][:3]) + (f" +{len(b['vendors']) - 3}" if len(b["vendors"]) > 3 else "")
+            lines.append(f"| {b['name']} | {_money(b['total'])} | {b['count']} | {paid} |")
+        lines.append("")
+    if s.get("other_vendors"):
+        lines += ["Vendors these buyers paid that are not on the list (often distributors or competitors):\n",
+                  "| Vendor | Spend | Purchases |", "|---|---|---|"]
+        for v in s["other_vendors"][:BUYER_ROWS]:
+            lines.append(f"| {v['name']} | {_money(v['total'])} | {v['count']} |")
+        lines.append("")
+    lines.append("_Public purchases only: government contracts and published city contracts. Most business-to-business "
+                 "sales leave no public record, so absence here does not mean a company has no customers._\n")
+    return "\n".join(lines)
+
+
 def render_section(name: str, block: dict[str, Any], verdict: dict[str, Any] | None,
-                   profile: Profile, date: str, bench: dict[str, Any] | None = None) -> str:
+                   profile: Profile, date: str, bench: dict[str, Any] | None = None,
+                   buyers: dict[str, Any] | None = None) -> str:
     goal = block.get("goal", "top_n")
     target = block.get("target_count")
     lines = [f"## {profile.label(name)}\n",
@@ -197,13 +242,14 @@ def render_section(name: str, block: dict[str, Any], verdict: dict[str, Any] | N
 
     rows = deliverable(block, verdict, goal)
     csv_path = f"exports/{date}/{name}-accounts.csv"
+    buyer_text = render_buyers(buyers) if buyers else ""
 
     if goal == "top_n":
         if target and len(rows) < target:
             reason = (verdict or {}).get("none_reason") or "not enough companies cleared the filters and the judge"
             lines.append(f"**Delivered {len(rows)} of {target}.** {reason.rstrip('.')}.\n")
         if not rows:
-            return "\n".join(lines)
+            return "\n".join(lines + ([buyer_text] if buyer_text else []))
         if verdict is None:
             lines.append("_Not judged: ranked by filter score only._\n")
             lines.append(render_market_table(rows))
@@ -218,11 +264,14 @@ def render_section(name: str, block: dict[str, Any], verdict: dict[str, Any] | N
             lines.append(f"_Removed by the judge as not actually in this market ({n}):_")
             lines.extend(f"- {r.get('name', r['account_id'])}: {r['reason']}" for r in verdict["rejected"])
             lines.append("")
+    if buyer_text:
+        lines.append(buyer_text)
     return "\n".join(lines)
 
 
 def render_report(accounts: dict[str, Any], verdicts: dict[str, Any] | None,
-                  profile: Profile, benchmark: dict[str, Any] | None = None) -> str:
+                  profile: Profile, benchmark: dict[str, Any] | None = None,
+                  buyers: dict[str, Any] | None = None) -> str:
     date = accounts["date"]
     weekday = dt.date.fromisoformat(date).strftime("%A")
     vsearch = (verdicts or {}).get("searches", {})
@@ -243,7 +292,9 @@ def render_report(accounts: dict[str, Any], verdicts: dict[str, Any] | None,
             lines.append(f"- **{profile.label(name)}:** {len(rows)} companies mapped")
     lines += ["", "---\n"]
     bsearch = (benchmark or {}).get("searches", {})
-    lines += [render_section(n, accounts["searches"][n], vsearch.get(n), profile, date, bsearch.get(n))
+    buysearch = (buyers or {}).get("searches", {})
+    lines += [render_section(n, accounts["searches"][n], vsearch.get(n), profile, date, bsearch.get(n),
+                             buysearch.get(n))
               for n in order]
     lines.append("---")
     footer = f"**Run cost:** {(verdicts or {}).get('run_cost_note', 'not recorded')}"
@@ -359,10 +410,12 @@ def main(argv: list[str] | None = None) -> int:
 
     bpath = layout.for_date("benchmark", date)
     benchmark = json.loads(bpath.read_text(encoding="utf-8")) if bpath.is_file() else None
+    buyers_path = layout.for_date("buyers", date)
+    buyers = json.loads(buyers_path.read_text(encoding="utf-8")) if buyers_path.is_file() else None
 
     report_path = layout.for_date("reports", date, ".md")
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(render_report(accounts, verdicts, profile, benchmark), encoding="utf-8")
+    report_path.write_text(render_report(accounts, verdicts, profile, benchmark, buyers), encoding="utf-8")
 
     export_dir = layout.exports(date)
     export_dir.mkdir(parents=True, exist_ok=True)
@@ -371,6 +424,11 @@ def main(argv: list[str] | None = None) -> int:
         rows = deliverable(block, vsearch.get(name), block.get("goal", "top_n"))
         (export_dir / f"{name}-accounts.csv").write_text(
             _csv(ACCOUNT_COLUMNS, account_rows(rows)), encoding="utf-8", newline="")
+        if purchases := ((buyers or {}).get("searches", {}).get(name) or {}).get("purchases"):
+            listed = {a["account_id"]: a["name"] for a, _ in rows}
+            (export_dir / f"{name}-purchases.csv").write_text(_csv(PURCHASE_COLUMNS, [
+                {**p, "listed_company": listed.get(p.get("vendor_account_id"), "")} for p in purchases
+            ]), encoding="utf-8", newline="")
         if queue := queue_rows(date, name, rows):
             (export_dir / f"{name}-queue.csv").write_text(
                 _csv(QUEUE_COLUMNS, queue), encoding="utf-8", newline="")

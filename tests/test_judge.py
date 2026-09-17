@@ -236,7 +236,7 @@ def test_cli_dispatches_and_run_passes_shared_flags(monkeypatch):
     for stage in cli.RUN_ORDER:
         monkeypatch.setitem(cli.STAGES, stage, lambda argv, s=stage: seen.append((s, argv)) or 0)
     assert cli.main(["run", "--data", "d", "--search", "x", "--no-judge"]) == 0
-    assert [s for s, _ in seen] == ["discover", "enrich", "filter", "report"]
+    assert [s for s, _ in seen] == ["discover", "enrich", "filter", "buyers", "report"]
     assert dict(seen)["discover"] == ["--data", "d", "--search", "x"]
     assert dict(seen)["filter"] == ["--data", "d"]              # filter has no --search flag
     assert cli.main(["nonsense"]) == 2

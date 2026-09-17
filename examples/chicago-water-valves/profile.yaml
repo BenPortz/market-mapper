@@ -1,5 +1,5 @@
 # The exact search used for this example. Copy it under `searches:` in your own
-# config/profile.yaml, with context/ideal_customer.md from this folder listed under `context:`.
+# config/profile.yaml, with ideal_customer.md from this folder listed under `context:`.
 # The OSHA file is public but not committed: download it from https://www.osha.gov/itadata.
 
 context:
@@ -39,3 +39,22 @@ searches:
       limit: 30
       drafts: false
     dedup: false
+    buyers:
+      years: 5
+      sources:
+        - type: usaspending
+          naics: ["332911", "332913", "332919"]
+          states: ["IL", "IN"]
+          by_company: true
+          max_awards: 100
+        # City contracts via any Socrata open data portal. Not used in the published
+        # example run: every Socrata portal refused connections from the network that
+        # produced it. Uncomment to add Chicago's own purchasing to the picture.
+        # - type: socrata
+        #   label: "City of Chicago contracts"
+        #   buyer: "City of Chicago"
+        #   domain: data.cityofchicago.org
+        #   dataset: rsxa-ify5
+        #   fields: {vendor: vendor_name, unit: department, description: description,
+        #            amount: award_amount, date: start_date, id: purchase_order_contract_number}
+      keywords: ["valve", "hydrant", "backflow", "flushometer"]

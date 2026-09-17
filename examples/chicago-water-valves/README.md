@@ -9,6 +9,7 @@ or oil and gas?
 | --- | --- |
 | [`report.md`](report.md) | The rendered report: funnel counts, the 14 companies kept with sizes, and the 14 rejected with reasons |
 | [`accounts.csv`](accounts.csv) | The deliverable list, one row per company, ranked by fit |
+| [`federal-purchases.csv`](federal-purchases.csv) | 100 federal contract awards for valves delivered in Illinois and Indiana, from USAspending.gov |
 | [`profile.yaml`](profile.yaml) | The exact search configuration |
 | [`ideal_customer.md`](ideal_customer.md) | The market definition the judge applied |
 | [`web-search-candidates.csv`](web-search-candidates.csv) | The starting list from ordinary web searches |
@@ -33,6 +34,25 @@ flush valve plant in Chicago and two valve makers under 40 employees, never
 appeared in a search result. OSHA filings also confirmed which brand offices
 really have local manufacturing, and attached a headcount to six of the 14.
 
+## Who buys
+
+The buyers stage then asked USAspending.gov who buys this product in the region,
+and whether any of the 14 companies sells to the federal government directly.
+
+- **None of the 14 appears as a direct federal vendor** in five years of
+  contract awards. Name matching is strict on purpose: a looser first version
+  "found" $2.9 billion for Chicago Valves & Controls, which turned out to be an
+  ad agency, a university, and a cancer center that share a word with the
+  company names. Those exact names are now test cases.
+- **The buyers are almost entirely Defense Logistics Agency and Navy units,**
+  and they buy through distributors and military suppliers such as Hoosier
+  Industrial Supply and AAR Supply Chain. For a manufacturer on the list, those
+  distributors are the route into federal work.
+- **It surfaced a lead the list missed.** Evac North America, in Cherry Valley,
+  IL, received 17 Navy awards totalling about $2.9 million for flow control
+  valves between February 2025 and March 2026. It appeared in the NSF listings
+  but was filtered out because its records never used the word "valve".
+
 ## Honest caveats
 
 - **Starting candidates came from an agent's web searches**, saved as a CSV,
@@ -45,6 +65,9 @@ really have local manufacturing, and attached a headcount to six of the 14.
 - **Many results are marked Unverified.** Six company sites refused automated
   reading, and OSHA-only plants have no website on record. The report says which
   facts came from which source, so a person knows what to check first.
+- **Federal records only.** City contracts would add utilities and public works, but
+  every Socrata open data portal refused connections from the network used for
+  this run, so that source is commented out in `profile.yaml`.
 - **Company names are real businesses**, taken from public records. Fit scores
   and risks are research judgments for a sales list, not statements about the
   companies' quality.

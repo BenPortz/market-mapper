@@ -247,3 +247,22 @@ def test_network_errors_are_recorded_per_source():
     block = discover.run_search("s", profile, FakeFetcher(error=NetError("timed out")), {})
     assert block["status"] == "failed"
     assert block["sources"][0]["error"] == "timed out"
+
+
+def test_osm_bounding_box_query():
+    q = osm.build_query([{"landuse": "quarry"}], [], 100, [38.2, -91.0, 39.0, -89.7])
+    assert '["landuse"="quarry"](38.2,-91.0,39.0,-89.7);' in q
+    assert "area[" not in q
+
+
+@pytest.mark.parametrize("bad", [[1, 2, 3], ["38.2", -91, 39, -89.7], [38.2, -91, 39, "0);out;"]])
+def test_osm_bounding_box_must_be_four_numbers(bad):
+    with pytest.raises(ValueError):
+        osm.build_query([{"landuse": "quarry"}], [], 10, bad)
+
+
+def test_osm_records_keep_coordinates_from_nodes_and_way_centers():
+    node = osm.to_record({"type": "node", "id": 1, "lat": 38.5, "lon": -90.3, "tags": {"name": "A Quarry"}})
+    way = osm.to_record({"type": "way", "id": 2, "center": {"lat": 38.6, "lon": -90.2}, "tags": {"name": "B Quarry"}})
+    assert node["coords"] == {"lat": 38.5, "lon": -90.3}
+    assert way["coords"] == {"lat": 38.6, "lon": -90.2}

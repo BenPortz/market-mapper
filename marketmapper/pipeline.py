@@ -59,6 +59,7 @@ def _new_account(rec: dict[str, Any]) -> dict[str, Any]:
         "record_ids": [],
         "evidence": [],
         "site": None,
+        "coords": rec.get("coords"),
     }
 
 
@@ -75,6 +76,7 @@ def _absorb(acct: dict[str, Any], rec: dict[str, Any]) -> None:
     acct["evidence"] += rec.get("evidence", [])
     acct["legal_name"] = acct["legal_name"] or rec.get("legal_name")
     acct["phone"] = acct["phone"] or rec.get("phone")
+    acct["coords"] = acct.get("coords") or rec.get("coords")
     if not acct["website"] and rec.get("website"):
         acct["website"], acct["domain"] = rec["website"], mf.domain_of(rec["website"])
     for k, v in (rec.get("address") or {}).items():
@@ -185,7 +187,7 @@ def filter_search(name: str, block: dict[str, Any], profile: Profile, run_date: 
 
     for acct in accounts:
         acct["region_status"] = mf.region_status(acct["address"], search.get("region", {}),
-                                                 mf.relevance_text(acct))
+                                                 mf.relevance_text(acct), acct.get("coords"))
         acct["signals"] = mf.signals_for(acct, search.get("signals", {}), run_date)
         acct["keyword_hits"] = mf.pattern_hits(mf.relevance_text(acct), search.get("include_any", []))
         acct["filters"] = mf.evaluate(acct, search, profile.filters)

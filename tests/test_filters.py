@@ -204,3 +204,44 @@ def test_score_ranks_signals_above_keywords():
     with_signal = {**GOOD, "signals": [{"kind": "hiring", "detail": "x"}], "site": {"text": ""}}
     keywords_only = {**GOOD, "site": {"text": "conveyor " * 20}}
     assert f.score(with_signal, SEARCH) > f.score(keywords_only, SEARCH)
+
+
+# --- metro regions --------------------------------------------------------
+
+STL = {"countries": ["US"], "regions": ["MO", "IL"], "postal_prefixes": ["630", "631", "620", "622"],
+       "cities": ["St. Louis", "East St. Louis", "Dupo"], "site_terms": ["St. Louis"]}
+
+
+def test_zip_prefix_places_an_address_in_a_metro():
+    assert f.region_status({"region": "MO", "postal_code": "63110"}, STL) == "in"
+    assert f.region_status({"region": "IL", "postal_code": "62239"}, STL) == "in"
+
+
+def test_right_state_wrong_zip_is_out():
+    # Kansas City is in Missouri but not in the St. Louis metro.
+    assert f.region_status({"region": "MO", "postal_code": "64105"}, STL) == "out"
+
+
+def test_wrong_state_is_out_even_with_a_matching_zip():
+    assert f.region_status({"region": "KS", "postal_code": "63110"}, STL) == "out"
+
+
+def test_city_decides_when_there_is_no_zip():
+    assert f.region_status({"region": "IL", "city": "Dupo"}, STL) == "in"
+    assert f.region_status({"region": "MO", "city": "Springfield"}, STL) == "out"
+
+
+def test_state_alone_is_unknown_for_a_metro_search():
+    assert f.region_status({"region": "MO"}, STL) == "unknown"
+    assert f.region_status({"region": "MO"}, STL, "Serving greater St. Louis") == "in"
+
+
+def test_map_coordinates_place_an_account_without_an_address():
+    region = {**STL, "osm_bbox": [38.25, -90.95, 39.0, -89.8]}
+    assert f.region_status({}, region, "", {"lat": 38.55, "lon": -90.25}) == "in"
+    assert f.region_status({}, region, "", {"lat": 39.10, "lon": -94.58}) == "out"   # Kansas City
+
+
+def test_zip_beats_coordinates():
+    region = {**STL, "osm_bbox": [38.25, -90.95, 39.0, -89.8]}
+    assert f.region_status({"postal_code": "64105"}, region, "", {"lat": 38.55, "lon": -90.25}) == "out"

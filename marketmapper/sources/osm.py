@@ -16,6 +16,7 @@ Spec:
 
 Region keys used:
     osm_areas: ["US-OR"]        # ISO 3166-2 codes, as tagged on OSM boundary relations
+    osm_bbox: [38.2, -91.0, 39.0, -89.7]   # or a metro box: south, west, north, east
 
 Data (c) OpenStreetMap contributors, ODbL. Keep attribution if you publish results.
 """
@@ -29,15 +30,24 @@ API = "https://overpass-api.de/api/interpreter"
 _SAFE = re.compile(r"^[A-Za-z0-9:_\- .]+$")
 
 
-def build_query(tags: list[dict[str, str]], areas: list[str], max_results: int) -> str:
-    """Overpass QL for every tag set inside every area.
+def build_query(tags: list[dict[str, str]], areas: list[str], max_results: int,
+                bbox: list[float] | None = None) -> str:
+    """Overpass QL for every tag set inside every area, or inside one bounding box.
 
     Values are interpolated into a query language, so anything outside a plain
-    character set is refused rather than escaped.
+    character set is refused rather than escaped. A bounding box is
+    [south, west, north, east] and must be four numbers.
     """
     for value in [*areas, *(x for t in tags for kv in t.items() for x in kv)]:
         if not _SAFE.match(str(value)):
             raise ValueError(f"unsafe characters in OSM query value: {value!r}")
+    if bbox is not None:
+        if len(bbox) != 4 or not all(isinstance(v, (int, float)) for v in bbox):
+            raise ValueError(f"osm_bbox must be four numbers [south, west, north, east]: {bbox!r}")
+        box = ",".join(str(float(v)) for v in bbox)
+        selectors = "".join("nwr" + "".join(f'["{k}"="{v}"]' for k, v in t.items()) + f"({box});"
+                            for t in tags)
+        return f"[out:json][timeout:120];({selectors});out center tags {int(max_results)};"
     area_sets = "".join(f'area["ISO3166-2"="{a}"]->.a{i};' for i, a in enumerate(areas))
     selectors = "".join(
         "nwr" + "".join(f'["{k}"="{v}"]' for k, v in t.items()) + f"(area.a{i});"
@@ -54,6 +64,8 @@ def to_record(element: dict[str, Any]) -> dict[str, Any] | None:
     if not name:
         return None
     osm_id = f"{element.get('type', 'node')}/{element.get('id')}"
+    point = element.get("center") or element
+    coords = (point["lat"], point["lon"]) if "lat" in point and "lon" in point else None
     categories = [f"{k}={tags[k]}" for k in ("amenity", "healthcare", "shop", "craft",
                                              "industrial", "office", "man_made") if k in tags]
     return make_record(
@@ -68,6 +80,7 @@ def to_record(element: dict[str, Any]) -> dict[str, Any] | None:
         categories=categories,
         evidence=[{"kind": "map_listing", "detail": f"OpenStreetMap {osm_id}",
                    "url": f"https://www.openstreetmap.org/{osm_id}"}],
+        coords=coords,
     )
 
 
@@ -76,10 +89,11 @@ def discover(spec: dict[str, Any], region: dict[str, Any], fetcher, ctx: dict[st
     from marketmapper.sources import SourceError
 
     areas = region.get("osm_areas") or []
+    bbox = region.get("osm_bbox")
     tags = spec.get("tags") or []
-    if not areas or not tags:
-        raise SourceError("osm needs region.osm_areas and at least one tag set")
-    query = build_query(tags, areas, int(spec.get("max_results", 500)))
+    if not (areas or bbox) or not tags:
+        raise SourceError("osm needs region.osm_areas or region.osm_bbox, and at least one tag set")
+    query = build_query(tags, [] if bbox else areas, int(spec.get("max_results", 500)), bbox)
     data = fetcher.post_json(API, form={"data": query})
     records = [r for el in data.get("elements", []) if (r := to_record(el))]
     # OSM does not always tag the state; the area it was found in is known.

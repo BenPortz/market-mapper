@@ -91,11 +91,12 @@ def region_code(value: str | None) -> str | None:
 
 
 def region_status(address: dict[str, Any] | None, region: dict[str, Any],
-                  text: str = "") -> str:
+                  text: str = "", coords: dict[str, float] | None = None) -> str:
     """"in", "out", or "unknown" for one account against a search region.
 
-    An address is the strongest evidence. Without one (typical for web search
-    results), text that names the region's places counts as "in". Anything else
+    An address is the strongest evidence, then map coordinates inside the
+    region's `osm_bbox`. Without either (typical for web search results), text
+    that names the region's places counts as "in". Anything else
     is "unknown", which the search's `region_strict` setting decides.
     """
     address = address or {}
@@ -103,11 +104,29 @@ def region_status(address: dict[str, Any] | None, region: dict[str, Any],
     countries = {c.upper() for c in region.get("countries", [])}
     country = (address.get("country") or "").upper()
     code = region_code(address.get("region"))
+    postal = (address.get("postal_code") or "").strip()
 
     if countries and country and country not in countries:
         return "out"
-    if states and code:
-        return "in" if code in states else "out"
+    if states and code and code not in states:
+        return "out"
+    # A metro area spans part of one or more states, so the state alone is not
+    # enough. ZIP prefixes are the most reliable metro boundary in address data.
+    if prefixes := region.get("postal_prefixes"):
+        if postal:
+            return "in" if postal.startswith(tuple(str(p) for p in prefixes)) else "out"
+        cities = {c.lower() for c in region.get("cities", [])}
+        city = (address.get("city") or "").lower()
+        if cities and city:
+            return "in" if city in cities else "out"
+    elif states and code:
+        return "in"
+
+    bbox = region.get("osm_bbox")
+    if bbox and coords and coords.get("lat") is not None:
+        south, west, north, east = bbox
+        inside = south <= coords["lat"] <= north and west <= coords["lon"] <= east
+        return "in" if inside else "out"
     if not states and countries and country:
         return "in"
 

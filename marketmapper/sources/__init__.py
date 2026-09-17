@@ -28,7 +28,8 @@ def make_record(source: str, source_id: str, name: str, *, website: str | None =
                 address: dict[str, Any] | None = None, phone: str | None = None,
                 categories: list[str] | None = None,
                 evidence: list[dict[str, Any]] | None = None,
-                legal_name: str | None = None) -> dict[str, Any]:
+                legal_name: str | None = None,
+                coords: tuple[float, float] | None = None) -> dict[str, Any]:
     address = address or {}
     return {
         "record_id": f"{source}:{source_id}",
@@ -46,6 +47,7 @@ def make_record(source: str, source_id: str, name: str, *, website: str | None =
         "phone": phone or None,
         "categories": [c for c in (categories or []) if c],
         "evidence": evidence or [],
+        "coords": {"lat": coords[0], "lon": coords[1]} if coords else None,
     }
 
 

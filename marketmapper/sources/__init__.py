@@ -29,7 +29,8 @@ def make_record(source: str, source_id: str, name: str, *, website: str | None =
                 categories: list[str] | None = None,
                 evidence: list[dict[str, Any]] | None = None,
                 legal_name: str | None = None,
-                coords: tuple[float, float] | None = None) -> dict[str, Any]:
+                coords: tuple[float, float] | None = None,
+                employees: int | None = None) -> dict[str, Any]:
     address = address or {}
     return {
         "record_id": f"{source}:{source_id}",
@@ -48,13 +49,16 @@ def make_record(source: str, source_id: str, name: str, *, website: str | None =
         "categories": [c for c in (categories or []) if c],
         "evidence": evidence or [],
         "coords": {"lat": coords[0], "lon": coords[1]} if coords else None,
+        "employees": employees,
     }
 
 
-from marketmapper.sources import csv_import, npi, osm, postings, web_search  # noqa: E402
+from marketmapper.sources import csv_import, npi, nsf, osha_ita, osm, postings, web_search  # noqa: E402
 
 SOURCES: dict[str, Callable[..., list[dict[str, Any]]]] = {
     "npi": npi.discover,
+    "nsf": nsf.discover,
+    "osha_ita": osha_ita.discover,
     "osm": osm.discover,
     "web_search": web_search.discover,
     "csv": csv_import.discover,

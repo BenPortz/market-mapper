@@ -161,7 +161,13 @@ def enrich_search(block: dict[str, Any], search: dict[str, Any], fetcher) -> dic
     cache: dict[str, dict[str, Any]] = {}
     fetched = 0
 
+    region = search.get("region") or {}
     for rec in block.get("records", []):
+        # Registry and certification sources return whole states; a plant whose own
+        # address is outside the region would be filtered out later, so reading its
+        # website only spends the fetch budget.
+        if mf.region_status(rec.get("address"), region, "", rec.get("coords")) == "out":
+            continue
         if not rec.get("website") and lookup_provider:
             if found := find_website(rec, lookup_provider, fetcher):
                 rec["website"] = found

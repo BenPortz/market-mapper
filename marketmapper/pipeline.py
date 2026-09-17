@@ -60,6 +60,7 @@ def _new_account(rec: dict[str, Any]) -> dict[str, Any]:
         "evidence": [],
         "site": None,
         "coords": rec.get("coords"),
+        "employees": rec.get("employees"),
     }
 
 
@@ -77,6 +78,9 @@ def _absorb(acct: dict[str, Any], rec: dict[str, Any]) -> None:
     acct["legal_name"] = acct["legal_name"] or rec.get("legal_name")
     acct["phone"] = acct["phone"] or rec.get("phone")
     acct["coords"] = acct.get("coords") or rec.get("coords")
+    # Several plants can merge into one account; the largest filing is the best size signal.
+    if rec.get("employees") is not None:
+        acct["employees"] = max(acct.get("employees") or 0, rec["employees"])
     if not acct["website"] and rec.get("website"):
         acct["website"], acct["domain"] = rec["website"], mf.domain_of(rec["website"])
     for k, v in (rec.get("address") or {}).items():
@@ -190,6 +194,7 @@ def filter_search(name: str, block: dict[str, Any], profile: Profile, run_date: 
                                                  mf.relevance_text(acct), acct.get("coords"))
         acct["signals"] = mf.signals_for(acct, search.get("signals", {}), run_date)
         acct["keyword_hits"] = mf.pattern_hits(mf.relevance_text(acct), search.get("include_any", []))
+        acct["size_band"] = mf.size_band(acct)
         acct["filters"] = mf.evaluate(acct, search, profile.filters)
         acct["seen_recent"] = use_dedup and seen_in(acct["name"], recent_blob)
         acct["passed"] = mf.passed(acct["filters"], profile.load_bearing) and not acct["seen_recent"]

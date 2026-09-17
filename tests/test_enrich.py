@@ -174,3 +174,16 @@ def test_redirects_to_private_hosts_are_refused():
     handler = net._GuardedRedirects()
     with pytest.raises(NetError):
         handler.redirect_request(None, None, 302, "Found", {}, "http://127.0.0.1/")
+
+
+def test_enrich_skips_records_known_to_be_out_of_region():
+    web = FakeWeb({"https://in.example/": "<p>a</p>", "https://out.example/": "<p>b</p>"})
+    block = {"records": [
+        {"name": "Downstate", "website": "https://out.example/", "evidence": [],
+         "address": {"region": "IL", "postal_code": "62522"}},
+        {"name": "Metro", "website": "https://in.example/", "evidence": [],
+         "address": {"region": "IL", "postal_code": "60007"}},
+    ]}
+    search = {"region": {"regions": ["IL"], "postal_prefixes": ["600"]}, "enrich": {"max_sites": 5, "max_pages": 1}}
+    e.enrich_search(block, search, web)
+    assert web.requested == ["https://in.example/"]

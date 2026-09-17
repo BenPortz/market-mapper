@@ -31,9 +31,22 @@ See [examples/sample-report.md](examples/sample-report.md) and the CSVs next to 
 | `osm` | Storefront and facility businesses anywhere, filtered by map tags and region (OpenStreetMap). Often carries a website. | No |
 | `web_search` | Anything with a website: manufacturers, integrators, service firms. Query templates are expanded once per place in the region, and directories and social sites are dropped. | Brave or Tavily |
 | `csv` | Lists you already have: trade association members, trade show exhibitors, dealer locators, CRM exports. Often the most complete list of an industry that exists. | No |
+| `nsf` | Manufacturers of products certified for drinking water and plumbing (NSF/ANSI 61 and related listings), filtered by the state of the **plant**. Certification is required to sell into potable water, so small makers appear whether or not they rank in search. | No |
+| `osha_ita` | Plants that file OSHA injury summaries (every manufacturing establishment with 20+ employees), filtered by NAICS code and ZIP. The only source that gives **headcount**. Reads the public CSV from osha.gov/itadata. | No |
 | `postings` | Companies that are hiring, collected by a browser agent from job boards that filter by location. A timing signal, not the backbone. See [`sources/browser/`](marketmapper/sources/browser/). | No |
 
-Adding a source is one module with a `discover()` function that returns records in the shared shape. Obvious next candidates are SAM.gov (by NAICS code), SEC EDGAR (by SIC code), and national company registries like UK Companies House.
+Adding a source is one module with a `discover()` function that returns records in the shared shape. Obvious next candidates are SAM.gov (by NAICS code), ASSE and IAPMO product listings, and national company registries like UK Companies House.
+
+## Coverage mode: finding the smaller companies
+
+Search engines rank by traffic, so the same well-known brands fill every results page. A default run is good at finding the leaders in a market and bad at finding the 40-person shop two exits down the highway. Coverage mode is a set of settings on a search that fixes that without throwing the leaders away:
+
+- **Sources that ignore popularity.** `nsf` and `osha_ita` list companies because they are certified or because they employ people, not because they rank well.
+- **Company size on every account.** `size_band` comes from OSHA headcount when there is a filing, or from a site describing itself as family owned. It is exported to the CSV and shown in the report.
+- **`prefer: small`** lifts known and likely small companies in the ranking, so the judge reads them first. Large companies still pass the filters and still appear; they just stop crowding the top.
+- **A coverage check.** `python -m marketmapper.benchmark` pulls Census County Business Patterns counts for the search's NAICS codes and counties (free key in `CENSUS_API_KEY`), and the report states the gap: "Census counts 38 establishments ... this list has 14." It names nobody, so it can only measure the list, never pad it.
+
+On a Chicago water valve search, adding the two coverage sources to the same web search candidates took the list from 9 to 14 manufacturers. The new names included a 180-person flush valve plant and two valve makers with under 40 employees, none of which appeared in any search result. It also confirmed which brand offices actually have local manufacturing.
 
 ---
 
@@ -152,12 +165,13 @@ marketmapper/
   filters.py       Pure normalization, region, signal, and filter logic
   pipeline.py      FILTER: merge records into accounts, filter, rank, queue for the judge
   report.py        WRITE: report, accounts CSV, drafts CSV, index
+  benchmark.py     COVERAGE: Census establishment counts to measure a list against
   config.py        Profile loading and validation
 config/            Example profile (real one gitignored)
 context.example/   Example seller context for a fictional company
 prompts/judge.md   The judge's instructions
 schemas/           JSON Schema contracts between stages
-tests/             150 tests, no network, fabricated fixtures
+tests/             195 tests, no network, fabricated fixtures
 examples/          A rendered report and CSV exports
 ```
 

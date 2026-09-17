@@ -45,7 +45,8 @@ INDEX_HEADER = (
 
 ACCOUNT_COLUMNS = [
     "rank", "account_id", "name", "website", "street", "city", "region", "postal_code",
-    "country", "phone", "categories", "sources", "signals", "score", "region_status",
+    "country", "phone", "employees", "size_band", "categories", "sources", "signals", "score",
+    "region_status",
     "fit", "fit_score", "what_they_do",
 ]
 QUEUE_COLUMNS = [
@@ -147,23 +148,43 @@ def render_account(acct: dict[str, Any], j: dict[str, Any]) -> str:
 
 
 def render_market_table(rows: list[tuple[dict[str, Any], dict[str, Any] | None]]) -> str:
-    lines = ["| # | Company | Location | Website | Signals |", "|---|---|---|---|---|"]
+    lines = ["| # | Company | Location | Size | Website | Signals |", "|---|---|---|---|---|---|"]
     for i, (a, _) in enumerate(rows[:MARKET_MAP_PREVIEW], start=1):
         sig = "; ".join(s["detail"] for s in a.get("signals", [])) or ""
         site = a.get("domain") or ""
-        lines.append(f"| {i} | {a['name']} | {_location(a.get('address') or {})} | {site} | {sig} |")
+        size = a.get("size_band") if a.get("size_band") not in (None, "unknown") else ""
+        if a.get("employees") is not None:
+            size = f"{a['employees']} employees"
+        lines.append(f"| {i} | {a['name']} | {_location(a.get('address') or {})} | {size} | {site} | {sig} |")
     if len(rows) > MARKET_MAP_PREVIEW:
         lines.append(f"\n_Showing {MARKET_MAP_PREVIEW} of {len(rows)}. The full list is in the CSV._")
     return "\n".join(lines) + "\n"
 
 
+def coverage_line(bench: dict[str, Any] | None, found: int) -> str | None:
+    """How the list compares with the Census count of establishments, or why it cannot."""
+    if not bench:
+        return None
+    if bench.get("status") != "ok":
+        return f"- **Coverage check did not run:** {bench.get('error', 'unknown error').rstrip('.')}."
+    codes = ", ".join(bench.get("naics", {}))
+    total = bench.get("total", 0)
+    return (f"- **Coverage check:** Census County Business Patterns ({bench.get('year')}) counts "
+            f"**{total}** establishments in NAICS {codes} across {bench.get('county_count')} counties, "
+            f"{bench.get('under_20', 0)} of them with fewer than 20 employees. This list has **{found}**. "
+            f"Census counts locations rather than companies and covers every product in those codes, "
+            f"so the real target is smaller than {total}.")
+
+
 def render_section(name: str, block: dict[str, Any], verdict: dict[str, Any] | None,
-                   profile: Profile, date: str) -> str:
+                   profile: Profile, date: str, bench: dict[str, Any] | None = None) -> str:
     goal = block.get("goal", "top_n")
     target = block.get("target_count")
     lines = [f"## {profile.label(name)}\n",
              f"_Goal: {'find the best ' + str(target) if goal == 'top_n' else 'map the whole market'}_\n",
              funnel_line(block, verdict), ""]
+    if (cov := coverage_line(bench, len(deliverable(block, verdict, goal)))):
+        lines += [cov, ""]
 
     failed = [s for s in block.get("sources", []) if s["status"] != "ok"]
     for s in failed:
@@ -201,7 +222,7 @@ def render_section(name: str, block: dict[str, Any], verdict: dict[str, Any] | N
 
 
 def render_report(accounts: dict[str, Any], verdicts: dict[str, Any] | None,
-                  profile: Profile) -> str:
+                  profile: Profile, benchmark: dict[str, Any] | None = None) -> str:
     date = accounts["date"]
     weekday = dt.date.fromisoformat(date).strftime("%A")
     vsearch = (verdicts or {}).get("searches", {})
@@ -221,7 +242,9 @@ def render_report(accounts: dict[str, Any], verdicts: dict[str, Any] | None,
         else:
             lines.append(f"- **{profile.label(name)}:** {len(rows)} companies mapped")
     lines += ["", "---\n"]
-    lines += [render_section(n, accounts["searches"][n], vsearch.get(n), profile, date) for n in order]
+    bsearch = (benchmark or {}).get("searches", {})
+    lines += [render_section(n, accounts["searches"][n], vsearch.get(n), profile, date, bsearch.get(n))
+              for n in order]
     lines.append("---")
     footer = f"**Run cost:** {(verdicts or {}).get('run_cost_note', 'not recorded')}"
     if model := (verdicts or {}).get("model"):
@@ -241,7 +264,10 @@ def account_rows(rows: list[tuple[dict[str, Any], dict[str, Any] | None]]) -> li
             "rank": i, "account_id": a["account_id"], "name": a["name"],
             "website": a.get("website") or "", **{k: addr.get(k) or "" for k in
                                                   ("street", "city", "region", "postal_code", "country")},
-            "phone": a.get("phone") or "", "categories": "; ".join(a.get("categories", [])),
+            "phone": a.get("phone") or "",
+            "employees": a.get("employees") if a.get("employees") is not None else "",
+            "size_band": a.get("size_band", ""),
+            "categories": "; ".join(a.get("categories", [])),
             "sources": "; ".join(a.get("sources", [])),
             "signals": "; ".join(s["detail"] for s in a.get("signals", [])),
             "score": a.get("score", ""), "region_status": a.get("region_status", ""),
@@ -331,9 +357,12 @@ def main(argv: list[str] | None = None) -> int:
             print(f"ERROR: verdicts failed schema validation: {err}", file=sys.stderr)
             return 2
 
+    bpath = layout.for_date("benchmark", date)
+    benchmark = json.loads(bpath.read_text(encoding="utf-8")) if bpath.is_file() else None
+
     report_path = layout.for_date("reports", date, ".md")
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(render_report(accounts, verdicts, profile), encoding="utf-8")
+    report_path.write_text(render_report(accounts, verdicts, profile, benchmark), encoding="utf-8")
 
     export_dir = layout.exports(date)
     export_dir.mkdir(parents=True, exist_ok=True)

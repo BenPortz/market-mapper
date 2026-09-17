@@ -241,11 +241,31 @@ def passed(filters: dict[str, bool], load_bearing: list[str]) -> bool:
     return all(filters.get(name, False) for name in load_bearing)
 
 
+_SMALL_HINTS = re.compile(r"family[- ]owned|family[- ]run|owner[- ]operated", re.I)
+_SMALL_BONUS = {"under 20": 4, "20-99": 3, "small (site)": 2, "100-249": 1}
+
+
+def size_band(account: dict[str, Any]) -> str:
+    """"under 20", "20-99", "100-249", "250+", "small (site)", or "unknown".
+
+    Headcount comes from filings (OSHA). Without one, a site describing itself as
+    family owned is a weak hint of a small company and is labelled as such.
+    """
+    n = account.get("employees")
+    if n is not None:
+        return "under 20" if n < 20 else "20-99" if n < 100 else "100-249" if n < 250 else "250+"
+    site = (account.get("site") or {}).get("text", "")
+    return "small (site)" if _SMALL_HINTS.search(site) else "unknown"
+
+
 def score(account: dict[str, Any], search: dict[str, Any]) -> int:
     """Deterministic rank used to decide which accounts the judge reads first.
 
     Timing signals weigh most, then how strongly the company's own words match
-    the search, then how much independent evidence exists for it.
+    the search, then how much independent evidence exists for it. A search with
+    `prefer: small` also lifts companies known or likely to be small, so a
+    coverage run reads past the big brands first. Large companies are not
+    dropped; they just stop crowding the top of the judge queue.
     """
     site = account.get("site") or {}
     hits = len(pattern_hits(relevance_text(account), search.get("include_any", [])))
@@ -253,4 +273,6 @@ def score(account: dict[str, Any], search: dict[str, Any]) -> int:
             + min(hits, 5)
             + (2 if site.get("text") else 0)
             + (1 if len(account.get("sources", [])) > 1 else 0)
-            + (1 if account.get("region_status") == "in" else 0))
+            + (1 if account.get("region_status") == "in" else 0)
+            + (_SMALL_BONUS.get(account.get("size_band") or size_band(account), 0)
+               if search.get("prefer") == "small" else 0))

@@ -44,7 +44,7 @@ Search engines rank by traffic, so the same well-known brands fill every results
 - **Sources that ignore popularity.** `nsf` and `osha_ita` list companies because they are certified or because they employ people, not because they rank well.
 - **Company size on every account.** `size_band` comes from OSHA headcount when there is a filing, or from a site describing itself as family owned. It is exported to the CSV and shown in the report.
 - **`prefer: small`** lifts known and likely small companies in the ranking, so the judge reads them first. Large companies still pass the filters and still appear; they just stop crowding the top.
-- **A coverage check.** `python -m marketmapper.benchmark` pulls Census County Business Patterns counts for the search's NAICS codes and counties (free key in `CENSUS_API_KEY`), and the report states the gap: "Census counts 38 establishments ... this list has 14." It names nobody, so it can only measure the list, never pad it.
+- **A coverage check.** `python -m marketmapper.benchmark` pulls Census County Business Patterns counts for the search's NAICS codes and counties (free key in `CENSUS_API_KEY`), and the report states the gap between the Census count and the list. It names nobody, so it can only measure the list, never pad it.
 
 On a Chicago water valve search, adding the two coverage sources to the same web search candidates took the list from 9 to 14 manufacturers. The new names included a 180-person flush valve plant and two valve makers with under 40 employees, none of which appeared in any search result. It also confirmed which brand offices actually have local manufacturing.
 

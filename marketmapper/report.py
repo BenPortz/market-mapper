@@ -90,8 +90,11 @@ def deliverable(block: dict[str, Any], verdict: dict[str, Any] | None,
         passed = [a for a in block.get("accounts", []) if a["passed"]]
         return [(a, None) for a in passed[: block.get("target_count") or len(passed)]]
 
-    return [(a, judged.get(a["account_id"])) for a in block.get("accounts", [])
+    rows = [(a, judged.get(a["account_id"])) for a in block.get("accounts", [])
             if a["passed"] and a["account_id"] not in rejected]
+    # Judged accounts first, best fit first; unjudged ones keep their filter-score order.
+    # sorted() is stable, so ties keep the filter ranking.
+    return sorted(rows, key=lambda r: (r[1] is None, -(r[1] or {}).get("fit_score", 0)))
 
 
 # --- report ---------------------------------------------------------------

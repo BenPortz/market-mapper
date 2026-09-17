@@ -182,3 +182,12 @@ def test_upsert_replaces_rather_than_duplicates(tmp_path):
     r.upsert_index(index, "2026-03-14", "| 2026-03-14 | second |")
     text = index.read_text(encoding="utf-8")
     assert text.count("2026-03-14") == 1 and "second" in text
+
+
+def test_market_map_ranks_judged_accounts_by_fit(accounts, verdicts):
+    rows = r.deliverable(accounts["searches"]["conveyor_manufacturers"],
+                         verdicts["searches"]["conveyor_manufacturers"], "market_map")
+    scores = [j["fit_score"] for _, j in rows if j]
+    assert scores == sorted(scores, reverse=True)
+    judged_flags = [j is not None for _, j in rows]
+    assert judged_flags == sorted(judged_flags, reverse=True)   # unjudged accounts come last

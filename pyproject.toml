@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "market-mapper"
+version = "0.2.0"
+description = "Find the companies in a market from public records, verify them from their own websites, and judge them against a seller's context."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Ben Portz" }]
+dependencies = [
+    "PyYAML>=6.0",
+    "jsonschema>=4.0",
+]
+
+[project.optional-dependencies]
+judge = ["anthropic>=1.0"]
+dev = ["pytest>=7.0", "anthropic>=1.0"]
+
+[project.scripts]
+market-mapper = "marketmapper.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["marketmapper*"]
+
+[tool.setuptools.package-data]
+marketmapper = ["schemas/*.json", "prompts/*.md", "sources/browser/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -43,7 +43,7 @@ def _rows(text: str) -> list[dict]:
 
 def test_verdicts_fixture_validates_against_the_schema(verdicts):
     pytest.importorskip("jsonschema")
-    assert p.validate(verdicts, Path("schemas/verdicts.schema.json")) is None
+    assert p.validate(verdicts, r.SCHEMA) is None
 
 
 def test_every_verdict_account_exists_in_the_accounts_fixture(accounts, verdicts):

@@ -27,7 +27,7 @@ from typing import Any
 from marketmapper import filters as mf
 from marketmapper.config import Layout, Profile, ProfileError, load_profile
 
-SCHEMA = Path("schemas/accounts.schema.json")
+SCHEMA = Path(__file__).parent / "schemas" / "accounts.schema.json"
 JUDGE_TEXT_CAP = 3000  # per account, keeps the judge's context bounded
 
 

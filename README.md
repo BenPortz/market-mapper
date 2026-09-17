@@ -5,14 +5,13 @@ Find the companies in a market, check that they really belong there, and hand a 
 Tell it "every conveyor manufacturer in the Great Lakes states" or "20 dental practices in Oregon likely to buy digital x-ray this year." It pulls companies from public registries, maps, web search, and lists you already have. It merges the duplicates, reads each company's own website, and filters the results in code against your rules. Then an LLM judge weighs the survivors against what *your* company sells. The output is a report, a CSV ready for a CRM, and optional outreach drafts. Nothing is ever sent.
 
 ```bash
-python -m marketmapper.discover   # find companies from every configured source
-python -m marketmapper.enrich     # read their websites
-python -m marketmapper.pipeline   # merge, filter, rank
-# JUDGE: an agent follows prompts/judge.md
-python -m marketmapper.report     # report + CSV exports
+market-mapper run --search chicago_water_valves
+# = discover -> enrich -> filter -> judge -> report, each stage also runnable on its own
 ```
 
-See [examples/sample-report.md](examples/sample-report.md) and the CSVs next to it for what a run produces.
+[![tests](https://github.com/BenPortz/market-mapper/actions/workflows/tests.yml/badge.svg)](https://github.com/BenPortz/market-mapper/actions/workflows/tests.yml)
+
+**See it on real data:** [`examples/chicago-water-valves/`](examples/chicago-water-valves/) maps the water valve manufacturers in the Chicago metro. Web search alone found 9; adding certification and OSHA records found 14, with headcounts, and the judge explains each of the 14 companies it rejected.
 
 ---
 
@@ -44,7 +43,7 @@ Search engines rank by traffic, so the same well-known brands fill every results
 - **Sources that ignore popularity.** `nsf` and `osha_ita` list companies because they are certified or because they employ people, not because they rank well.
 - **Company size on every account.** `size_band` comes from OSHA headcount when there is a filing, or from a site describing itself as family owned. It is exported to the CSV and shown in the report.
 - **`prefer: small`** lifts known and likely small companies in the ranking, so the judge reads them first. Large companies still pass the filters and still appear; they just stop crowding the top.
-- **A coverage check.** `python -m marketmapper.benchmark` pulls Census County Business Patterns counts for the search's NAICS codes and counties (free key in `CENSUS_API_KEY`), and the report states the gap between the Census count and the list. It names nobody, so it can only measure the list, never pad it.
+- **A coverage check.** `market-mapper benchmark` pulls Census County Business Patterns counts for the search's NAICS codes and counties (free key in `CENSUS_API_KEY`), and the report states the gap between the Census count and the list. It names nobody, so it can only measure the list, never pad it.
 
 On a Chicago water valve search, adding the two coverage sources to the same web search candidates took the list from 9 to 14 manufacturers. The new names included a 180-person flush valve plant and two valve makers with under 40 employees, none of which appeared in any search result. It also confirmed which brand offices actually have local manufacturing.
 
@@ -68,7 +67,7 @@ flowchart LR
 | **DISCOVER** | Python against public APIs | Structured sources are cheaper, faster, and more complete than a model browsing |
 | **ENRICH** | Python, bounded fetches | A registry says a company exists; its website says what it actually does |
 | **FILTER** | Pure Python | Merging, region checks, keywords, exclusions, and ranking are rules. Rules belong in code, where they are reproducible and testable. |
-| **JUDGE** | LLM with no tools | Deciding whether a company really fits *your* offer is the only step that needs judgment |
+| **JUDGE** | Claude API, no tools | Deciding whether a company really fits *your* offer is the only step that needs judgment |
 | **WRITE** | Pure Python | The report and CSVs render from data, so their structure never drifts |
 
 ### Why the stages are separate
@@ -89,7 +88,9 @@ Separation also keeps failures visible. Each source reports its own status, so a
 
 **Every claim cites the seller's context.** The judge can only argue fit using the seller's context files. Each point names the proof id or ideal customer section it came from. A result that is not written in `proof.md` cannot appear in a report or a draft.
 
-**Schema-validated handoffs.** [`schemas/`](schemas/) defines each contract. When the judge's output drifts, it fails as a schema error instead of producing a broken CSV.
+**The judge is boxed in by code.** `market-mapper judge` sends Claude the rules ([`judge_rules.md`](marketmapper/prompts/judge_rules.md)), the seller's context, and the company records, with no tools, and constrains the reply to a JSON schema. Code then enforces what a prompt can only ask for: every queued company gets exactly one decision (a skipped company is recorded as "no decision returned", never dropped), ids the model invents are ignored, any `why_fit` point that does not cite a real heading in the context files is removed, a top-N list is cut to the target with the shortfall stated, and drafts appear only when enabled. The rules and context sit in a cached prefix, so batches after the first mostly pay for the company records. Refusals fall back server-side; truncated or invalid output fails loudly instead of writing a partial file.
+
+**Schema-validated handoffs.** [`marketmapper/schemas/`](marketmapper/schemas/) defines each contract. When the judge's output drifts, it fails as a schema error instead of producing a broken CSV.
 
 **Rerunnable stages.** Each stage writes a dated file. Re-run the judge against frozen accounts while tuning the prompt, or re-render without calling the model.
 
@@ -119,37 +120,37 @@ Everything company-specific lives in two gitignored places:
   - `proof.md`: results you can back up, each under an id heading
   - `constraints.md`: what must never be claimed or promised
 
-The committed examples belong to a fictional seller, Acme Radiography, which sells dental x-ray systems and inline x-ray inspection for production conveyors. Every company, domain, and registry number in this repo's fixtures and examples is invented.
+`config/profile.example.yaml` and `context.example/` belong to a fictional seller, Acme Radiography, and every company in `tests/fixtures/` is invented. The run in `examples/` uses real public records.
 
 ---
 
 ## Quickstart
 
 ```bash
-pip install -r requirements.txt
+pip install -e ".[judge]"          # Python 3.10+
 cp config/profile.example.yaml config/profile.yaml
 cp -r context.example context
-export BRAVE_API_KEY=...        # only if a search uses web_search
+export ANTHROPIC_API_KEY=...        # the judge stage (or run `ant auth login`)
+export BRAVE_API_KEY=...            # only if a search uses web_search
+export CENSUS_API_KEY=...           # only for the coverage check
 ```
 
-Edit the profile and the context files, then:
+Edit the profile and the context files, then run everything, or one stage at a time:
 
 ```bash
-python -m marketmapper.discover --search dental_xray_buyers
-python -m marketmapper.enrich
-python -m marketmapper.pipeline
+market-mapper run --search dental_xray_buyers
+market-mapper discover --search dental_xray_buyers
+market-mapper enrich
+market-mapper filter
+market-mapper judge --dry-run       # shows how much would be sent, calls nothing
+market-mapper judge
+market-mapper report
 ```
 
-Point an agent at [`prompts/judge.md`](prompts/judge.md) to write `data/verdicts/<date>.json`, then:
+The judge uses `claude-opus-5` at `high` effort by default; set `judge.model`, `judge.effort`, or `judge.chunk_size` per search. `market-mapper run --no-judge` stops before any model call, and a market map with `judge.limit: 0` renders from the accounts file alone. [`prompts/judge.md`](prompts/judge.md) describes the same stage for an interactive agent instead of the API.
 
 ```bash
-python -m marketmapper.report
-```
-
-A market map with `judge.limit: 0` skips the judge entirely. `report` renders from the accounts file alone.
-
-```bash
-python -m pytest tests/ -q
+pip install -e ".[dev]" && pytest -q     # no network, no API keys needed
 ```
 
 ---
@@ -165,14 +166,23 @@ marketmapper/
   filters.py       Pure normalization, region, signal, and filter logic
   pipeline.py      FILTER: merge records into accounts, filter, rank, queue for the judge
   report.py        WRITE: report, accounts CSV, drafts CSV, index
+  judge.py         JUDGE: Claude API call, structured output, and the checks around it
   benchmark.py     COVERAGE: Census establishment counts to measure a list against
   config.py        Profile loading and validation
+  __main__.py      The market-mapper command
+  prompts/         The judge's rules
+  schemas/         JSON Schema contracts between stages
 config/            Example profile (real one gitignored)
 context.example/   Example seller context for a fictional company
-prompts/judge.md   The judge's instructions
-schemas/           JSON Schema contracts between stages
-tests/             195 tests, no network, fabricated fixtures
-examples/          A rendered report and CSV exports
+prompts/judge.md   The judge stage as instructions for an interactive agent
+tests/             215 tests, no network or API keys, fabricated fixtures
+examples/          A real run: Chicago water valve manufacturers
 ```
 
 Map data from OpenStreetMap is (c) OpenStreetMap contributors under the ODbL. Keep that attribution if you publish results built on it.
+
+## License
+
+Copyright (c) 2026 Ben Portz. All rights reserved.
+
+This repository is public so the code can be read and evaluated. No license is granted to copy, modify, or distribute it. If you would like to use it, open an issue and ask.

@@ -176,7 +176,7 @@ def test_site_text_is_capped_for_the_judge(enriched):
 
 def test_output_validates_against_the_schema(out):
     pytest.importorskip("jsonschema")
-    assert p.validate(out, Path("schemas/accounts.schema.json")) is None
+    assert p.validate(out, p.SCHEMA) is None
 
 
 # --- dedup ----------------------------------------------------------------

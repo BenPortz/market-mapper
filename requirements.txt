@@ -1,8 +1,5 @@
-# Runtime
+# Prefer: pip install -e ".[dev]"   (see pyproject.toml)
 PyYAML>=6.0
-
-# Optional but recommended: validates stage handoffs against schemas/
 jsonschema>=4.0
-
-# Development
+anthropic>=1.0   # judge stage only
 pytest>=7.0

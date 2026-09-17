@@ -1,3 +1,0 @@
-rank,account_id,name,website,street,city,region,postal_code,country,phone,categories,sources,signals,score,region_status,fit,fit_score,what_they_do
-1,pineconefamilydental-example,Pinecone Family Dental,https://www.pineconefamilydental.example/,100 Example Ave,Bend,OR,97701,US,541-555-0100,amenity=dentist; Dentist,osm; npi,"Registered 2025-11-02 (132 days ago); Site says ""Now open""",10,in,strong,5,New family dental practice in Bend with four operatories offering general and emergency care.
-2,high-desert-endodontics-redmond-or,High Desert Endodontics PLLC,,,Redmond,OR,97756,US,541-555-0105,Endodontics,npi,Registered 2026-01-15 (58 days ago),4,in,possible,3,"Unverified: endodontic practice in Redmond, per its registry listing. No website was found to confirm."

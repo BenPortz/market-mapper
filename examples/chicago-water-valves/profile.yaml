@@ -1,0 +1,41 @@
+# The exact search used for this example. Copy it under `searches:` in your own
+# config/profile.yaml, with context/ideal_customer.md from this folder listed under `context:`.
+# The OSHA file is public but not committed: download it from https://www.osha.gov/itadata.
+
+context:
+  - examples/chicago-water-valves/ideal_customer.md
+
+searches:
+  chicago_water_valves:
+    label: "Water valve manufacturers (Chicago metro)"
+    goal: market_map
+    region:
+      label: "Chicago metro (IL and NW Indiana)"
+      countries: [US]
+      regions: [IL, IN]
+      postal_prefixes: ["600", "601", "602", "603", "604", "605", "606", "607", "608", "463", "464"]
+      cities: ["Chicago", "Franklin Park", "Elmhurst", "Des Plaines", "Aurora", "Morton Grove", "Skokie",
+               "Elk Grove Village", "Downers Grove", "Westmont", "Lincolnshire", "Broadview", "West Chicago",
+               "Lake Villa", "Schaumburg", "Naperville", "Joliet", "Elgin", "Hammond", "Gary"]
+      site_terms: ["Chicago", "Illinois", "Chicagoland"]
+    prefer: small
+    sources:
+      - type: csv
+        path: examples/chicago-water-valves/web-search-candidates.csv
+        label: "Web search candidates (collected by agent)"
+      - type: nsf
+        programs: [PwsComponents, Plumbing]
+      - type: osha_ita
+        path: data/imports/osha/ITA_300A_Summary_Data_2024_through_12-31-2025.zip
+        naics: ["332911", "332912", "332913", "332919"]
+    include_any:
+      - "valve"
+    region_strict: true
+    require_website: false   # OSHA filings carry no website
+    enrich:
+      max_sites: 80
+      max_pages: 3
+    judge:
+      limit: 30
+      drafts: false
+    dedup: false

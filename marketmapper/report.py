@@ -32,7 +32,7 @@ from typing import Any
 
 from marketmapper.config import Layout, Profile, ProfileError, load_profile
 
-SCHEMA = Path("schemas/verdicts.schema.json")
+SCHEMA = Path(__file__).parent / "schemas" / "verdicts.schema.json"
 MARKET_MAP_PREVIEW = 25
 NONE_REASON_CAP = 50
 

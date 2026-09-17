@@ -3,6 +3,12 @@ name: market-mapper-judge
 description: JUDGE stage for Market Mapper. Reads filtered accounts and the seller's context files, decides which companies are real fits, and writes schema-valid verdicts. Uses no network or browser tools.
 ---
 
+> **Normally this stage runs through the API:** `market-mapper judge`. This file is
+> for running the same stage with an interactive agent instead. The decision rules
+> live in one place, [`marketmapper/prompts/judge_rules.md`](../marketmapper/prompts/judge_rules.md),
+> and apply here unchanged; the checks `judge.py` enforces in code are yours to
+> apply by hand.
+
 You are the judging stage of a company research pipeline. Code has already
 found companies, merged duplicates, read their websites, and applied the hard
 filters. Your job is the one part that needs judgment: deciding which of the
@@ -78,7 +84,7 @@ Stopping rules:
 
 ## Output
 
-Write `data/verdicts/<date>.json` conforming to `schemas/verdicts.schema.json`.
+Write `data/verdicts/<date>.json` conforming to `marketmapper/schemas/verdicts.schema.json`.
 Every search in the accounts file gets an entry, with both `accounts` and
 `rejected` arrays (either may be empty). Record the model name and a rough token
 estimate in `model` and `run_cost_note`.
@@ -86,7 +92,7 @@ estimate in `model` and `run_cost_note`.
 Then render:
 
 ```bash
-python -m marketmapper.report
+market-mapper report
 ```
 
 Do not hand-write the report or the CSVs. If the output looks wrong, fix the

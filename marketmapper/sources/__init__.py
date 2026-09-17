@@ -53,13 +53,17 @@ def make_record(source: str, source_id: str, name: str, *, website: str | None =
     }
 
 
-from marketmapper.sources import csv_import, npi, nsf, osha_ita, osm, postings, web_search  # noqa: E402
+from marketmapper.sources import (  # noqa: E402
+    csv_import, npi, nsf, osha_ita, osm, postings, sec_form_d, web_search, yc_directory,
+)
 
 SOURCES: dict[str, Callable[..., list[dict[str, Any]]]] = {
     "npi": npi.discover,
     "nsf": nsf.discover,
     "osha_ita": osha_ita.discover,
+    "sec_form_d": sec_form_d.discover,
     "osm": osm.discover,
+    "yc_directory": yc_directory.discover,
     "web_search": web_search.discover,
     "csv": csv_import.discover,
     "postings": postings.discover,

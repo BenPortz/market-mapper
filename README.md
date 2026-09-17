@@ -1,17 +1,29 @@
 # market-mapper
 
-Find the companies in a market, check that they really belong there, and hand a sales team a clean list with the reasoning attached.
-
-Tell it "every conveyor manufacturer in the Great Lakes states" or "20 dental practices in Oregon likely to buy digital x-ray this year." It pulls companies from public registries, maps, web search, and lists you already have. It merges the duplicates, reads each company's own website, and filters the results in code against your rules. Then an LLM judge weighs the survivors against what *your* company sells. The output is a report, a CSV ready for a CRM, and optional outreach drafts. Nothing is ever sent.
-
-```bash
-market-mapper run --search chicago_water_valves
-# = discover -> enrich -> filter -> judge -> report, each stage also runnable on its own
-```
+Find the companies in a market from public records, verify each one from its own website, and have Claude judge them against what *you* sell, with code checking every step the model takes.
 
 [![tests](https://github.com/BenPortz/market-mapper/actions/workflows/tests.yml/badge.svg)](https://github.com/BenPortz/market-mapper/actions/workflows/tests.yml)
 
-**See it on real data:** [`examples/chicago-water-valves/`](examples/chicago-water-valves/) maps the water valve manufacturers in the Chicago metro. Web search alone found 9; adding certification and OSHA records found 14, with headcounts, and the judge explains each of the 14 companies it rejected. Federal contract records then show who buys valves in the region, and through which distributors.
+```bash
+market-mapper run --search b2b_software_no_chat
+# discover -> enrich -> filter -> judge -> buyers -> report, each stage also runnable on its own
+```
+
+**What it demonstrates**
+
+- **An LLM boxed in by code.** The judge has no tools and must return structured output. Code guarantees one decision per company, strips any claim that does not cite the seller's own context, and fails loudly on refusals or truncation. ([judge.py](marketmapper/judge.py))
+- **Messy real data, merged honestly.** Registries, maps, certifications, OSHA filings, SEC filings, directories, and web search describe the same company differently. Records merge by website or name and city, independent of order, and never across two different websites.
+- **Signals, not vibes.** Hiring, recent funding, a newly registered practice, which chat widget a site runs: each is a fact with a link to its source, used to rank and filter.
+- **Measured coverage and failure.** Census counts measure how complete a list is. A failed source is reported as failed, a site that cannot be read is "unknown" rather than "no", and a vendor name is only matched when every word of it matches. The $2.9 billion false match that rule prevents is a test case.
+- **Guardrails.** Private-address blocking on every fetch and redirect, robots.txt, rate limits, no page script executed, no personal contact data collected, nothing ever sent.
+
+**Three real runs**
+
+| Example | Question | What came out |
+| --- | --- | --- |
+| [B2B software with no chat widget](examples/b2b-software-no-chat/) | Which hiring US B2B software companies have no chat or AI assistant on their site? | 126 verified with no widget out of 298; 132 more could not be confirmed either way |
+| [Midwest software, funded or hiring](examples/midwest-software-hiring/) | Which Midwest venture-backed software companies are growing right now? | 18 companies from 38; six both recently funded and hiring |
+| [Chicago water valve manufacturers](examples/chicago-water-valves/) | Who makes valves for water in the Chicago metro, and who buys them? | 9 from web search became 14 with certification and OSHA records; federal buyers purchase through distributors |
 
 ---
 
@@ -32,6 +44,8 @@ market-mapper run --search chicago_water_valves
 | `csv` | Lists you already have: trade association members, trade show exhibitors, dealer locators, CRM exports. Often the most complete list of an industry that exists. | No |
 | `nsf` | Manufacturers of products certified for drinking water and plumbing (NSF/ANSI 61 and related listings), filtered by the state of the **plant**. Certification is required to sell into potable water, so small makers appear whether or not they rank in search. | No |
 | `osha_ita` | Plants that file OSHA injury summaries (every manufacturing establishment with 20+ employees), filtered by NAICS code and ZIP. The only source that gives **headcount**. Reads the public CSV from osha.gov/itadata. | No |
+| `yc_directory` | Software companies from the Y Combinator directory (a public JSON mirror): website, locations, industry, tags, team size, batch, and hiring status. A recent batch becomes a "funded" signal; an open hiring flag becomes a "hiring" signal. | No |
+| `sec_form_d` | Companies that just raised money, from SEC Form D filings: issuer, address, industry group, and amount sold. Funds and SPVs are dropped; the named people in a filing are never read. Needs a user agent with a contact email, per SEC policy. | No |
 | `postings` | Companies that are hiring, collected by a browser agent from job boards that filter by location. A timing signal, not the backbone. See [`sources/browser/`](marketmapper/sources/browser/). | No |
 
 Adding a source is one module with a `discover()` function that returns records in the shared shape. Obvious next candidates are SAM.gov (by NAICS code), ASSE and IAPMO product listings, and national company registries like UK Companies House.
@@ -46,6 +60,18 @@ Search engines rank by traffic, so the same well-known brands fill every results
 - **A coverage check.** `market-mapper benchmark` pulls Census County Business Patterns counts for the search's NAICS codes and counties (free key in `CENSUS_API_KEY`), and the report states the gap between the Census count and the list. It names nobody, so it can only measure the list, never pad it.
 
 On a Chicago water valve search, adding the two coverage sources to the same web search candidates took the list from 9 to 14 manufacturers. The new names included a 180-person flush valve plant and two valve makers with under 40 employees, none of which appeared in any search result. It also confirmed which brand offices actually have local manufacturing.
+
+## What a company's website runs
+
+When ENRICH reads a company's site it also records which tools the page code loads: chat and AI assistant widgets (Intercom, Drift, Qualified, HubSpot chat, Zendesk, Ada, and about twenty more), meeting schedulers (Chili Piper, Calendly, HubSpot meetings), and tag managers. A search can then require a tool to be absent or present:
+
+```yaml
+tech_absent: [chat]          # no chat or assistant widget on the site
+tech_present: [scheduler]    # but a demo booking tool
+tech_unverified_ok: false    # a tag manager could hide a widget; do not count those as absent
+```
+
+Detection reads script tags and embed URLs only, so a blog post that mentions Intercom is not a detection. It also reports what it cannot see instead of guessing: a widget injected through Google Tag Manager never appears in the page HTML, so "no chat, but a tag manager" is its own status (`absent_unverified`), and a site that builds itself in JavaScript or refuses the request is `unknown`. Neither counts as "has no chat". The report states how many companies landed in each status.
 
 ## Who buys: public purchase records
 
@@ -191,8 +217,8 @@ marketmapper/
 config/            Example profile (real one gitignored)
 context.example/   Example seller context for a fictional company
 prompts/judge.md   The judge stage as instructions for an interactive agent
-tests/             240 tests, no network or API keys, fabricated fixtures
-examples/          A real run: Chicago water valve manufacturers
+tests/             273 tests, no network or API keys, fabricated fixtures
+examples/          Three real runs: see the table at the top
 ```
 
 Map data from OpenStreetMap is (c) OpenStreetMap contributors under the ODbL. Keep that attribution if you publish results built on it.

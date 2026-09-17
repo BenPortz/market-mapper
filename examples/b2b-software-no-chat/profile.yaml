@@ -1,0 +1,28 @@
+# The exact search used for this example. Copy it under `searches:` in your own config/profile.yaml.
+
+searches:
+  b2b_software_no_chat:
+    label: "US B2B software companies with no chat widget on their site"
+    goal: market_map
+    region:
+      label: "United States"
+      countries: [US]
+    sources:
+      - type: yc_directory
+        industries: [B2B]
+        statuses: [Active]
+        team_size: [10, 150]
+        hiring_only: true
+    tech_absent: [chat]
+    tech_unverified_ok: false
+    signals:
+      hiring: true
+    require_website: true
+    region_strict: true
+    enrich:
+      max_sites: 400
+      max_pages: 1
+      max_scripts: 20
+    judge:
+      limit: 0
+    dedup: false

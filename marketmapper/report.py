@@ -46,7 +46,7 @@ INDEX_HEADER = (
 ACCOUNT_COLUMNS = [
     "rank", "account_id", "name", "website", "street", "city", "region", "postal_code",
     "country", "phone", "employees", "size_band", "categories", "sources", "signals", "score",
-    "region_status",
+    "region_status", "tech_status", "tech_detected",
     "fit", "fit_score", "what_they_do",
 ]
 PURCHASE_COLUMNS = [
@@ -153,17 +153,42 @@ def render_account(acct: dict[str, Any], j: dict[str, Any]) -> str:
 
 
 def render_market_table(rows: list[tuple[dict[str, Any], dict[str, Any] | None]]) -> str:
-    lines = ["| # | Company | Location | Size | Website | Signals |", "|---|---|---|---|---|---|"]
+    show_tools = any(a.get("tech_status") for a, _ in rows)
+    head = "| # | Company | Location | Size | Website | Signals |" + (" Tools on site |" if show_tools else "")
+    lines = [head, "|---|---|---|---|---|---|" + ("---|" if show_tools else "")]
     for i, (a, _) in enumerate(rows[:MARKET_MAP_PREVIEW], start=1):
         sig = "; ".join(s["detail"] for s in a.get("signals", [])) or ""
         site = a.get("domain") or ""
         size = a.get("size_band") if a.get("size_band") not in (None, "unknown") else ""
         if a.get("employees") is not None:
-            size = f"{a['employees']} employees"
-        lines.append(f"| {i} | {a['name']} | {_location(a.get('address') or {})} | {size} | {site} | {sig} |")
+            size = f"{a['employees']} employee{'' if a['employees'] == 1 else 's'}"
+        row = f"| {i} | {a['name']} | {_location(a.get('address') or {})} | {size} | {site} | {sig} |"
+        if show_tools:
+            tools = ", ".join(t.split(":", 1)[1].replace("_", " ") for t in (a.get("site") or {}).get("tech") or [])
+            row += f" {tools or 'none detected'} |"
+        lines.append(row)
     if len(rows) > MARKET_MAP_PREVIEW:
         lines.append(f"\n_Showing {MARKET_MAP_PREVIEW} of {len(rows)}. The full list is in the CSV._")
     return "\n".join(lines) + "\n"
+
+
+def tool_check_line(block: dict[str, Any]) -> str | None:
+    """How the tool check came out across every company whose status was evaluated."""
+    counts: dict[str, dict[str, int]] = {}
+    for a in block.get("accounts", []):
+        for category, status in (a.get("tech_status") or {}).items():
+            counts.setdefault(category, {}).setdefault(status, 0)
+            counts[category][status] += 1
+    if not counts:
+        return None
+    labels = {"present": "present", "absent": "absent",
+              "absent_unverified": "not found, but a tag manager or HubSpot tracking could switch it on",
+              "unknown": "could not tell (site unreadable or built in JavaScript)"}
+    parts = []
+    for category, by_status in counts.items():
+        detail = ", ".join(f"{by_status[s]} {labels[s]}" for s in labels if by_status.get(s))
+        parts.append(f"{category}: {detail}")
+    return f"- **Tool check** across {len(block.get('accounts', []))} companies: " + "; ".join(parts) + "."
 
 
 def coverage_line(bench: dict[str, Any] | None, found: int) -> str | None:
@@ -230,6 +255,8 @@ def render_section(name: str, block: dict[str, Any], verdict: dict[str, Any] | N
              funnel_line(block, verdict), ""]
     if (cov := coverage_line(bench, len(deliverable(block, verdict, goal)))):
         lines += [cov, ""]
+    if (tools := tool_check_line(block)):
+        lines += [tools, ""]
 
     failed = [s for s in block.get("sources", []) if s["status"] != "ok"]
     for s in failed:
@@ -318,6 +345,8 @@ def account_rows(rows: list[tuple[dict[str, Any], dict[str, Any] | None]]) -> li
             "phone": a.get("phone") or "",
             "employees": a.get("employees") if a.get("employees") is not None else "",
             "size_band": a.get("size_band", ""),
+            "tech_status": "; ".join(f"{k}={v}" for k, v in (a.get("tech_status") or {}).items()),
+            "tech_detected": "; ".join((a.get("site") or {}).get("tech") or []),
             "categories": "; ".join(a.get("categories", [])),
             "sources": "; ".join(a.get("sources", [])),
             "signals": "; ".join(s["detail"] for s in a.get("signals", [])),

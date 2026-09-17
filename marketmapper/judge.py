@@ -130,7 +130,9 @@ def account_view(acct: dict[str, Any]) -> dict[str, Any]:
         "evidence": [{k: e[k] for k in ("kind", "detail", "snippet", "url") if e.get(k)}
                      for e in acct.get("evidence", [])],
         "website_read": {"title": site.get("title"), "description": site.get("description"),
-                         "text": site.get("text"), "error": site.get("error")} if site else None,
+                         "text": site.get("text"), "error": site.get("error"),
+                         "tools_in_page_code": site.get("tech")} if site else None,
+        "tool_status": acct.get("tech_status") or None,
     }
 
 

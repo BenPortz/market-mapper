@@ -31,10 +31,12 @@ from pathlib import Path
 from typing import Any
 
 from marketmapper import filters as mf
+from marketmapper import techdetect
 from marketmapper.config import Layout, Profile, ProfileError, load_profile
 from marketmapper.net import DEFAULT_USER_AGENT, Fetcher, NetError
 
 SITE_TEXT_CAP = 6000
+SCRIPT_BYTES = 3_000_000   # one JavaScript bundle; larger files are skipped, not truncated
 PAGE_TEXT_CAP = 2500
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
 _USEFUL_PATH = re.compile(r"/(about|company|who-we-are|products?|services?|solutions|"
@@ -97,7 +99,7 @@ def parse_page(html: str, base_url: str) -> dict[str, Any]:
             "text": _EMAIL.sub("[email removed]", p.text), "links": links}
 
 
-def read_site(website: str, fetcher, max_pages: int) -> dict[str, Any]:
+def read_site(website: str, fetcher, max_pages: int, max_scripts: int = 0) -> dict[str, Any]:
     site: dict[str, Any] = {"url": website, "title": "", "description": "", "text": "",
                             "pages": [], "error": None}
     try:
@@ -108,6 +110,7 @@ def read_site(website: str, fetcher, max_pages: int) -> dict[str, Any]:
     first = parse_page(home["html"], home["url"])
     site.update(url=home["url"], title=first["title"], description=first["description"])
     texts = [first["text"][:PAGE_TEXT_CAP]]
+    raw_pages = [home["html"]]
     site["pages"].append(home["url"])
     for link in first["links"][: max(0, max_pages - 1)]:
         try:
@@ -115,8 +118,22 @@ def read_site(website: str, fetcher, max_pages: int) -> dict[str, Any]:
         except NetError:
             continue  # a missing about page is not worth failing the company over
         texts.append(parse_page(page["html"], page["url"])["text"][:PAGE_TEXT_CAP])
+        raw_pages.append(page["html"])
         site["pages"].append(page["url"])
     site["text"] = "\n\n".join(texts)[:SITE_TEXT_CAP]
+    # Tools are read from the embed code of the pages actually fetched; the raw HTML
+    # itself is not stored.
+    tech = set(techdetect.detect(raw_pages))
+    scanned = 0
+    for script_url in techdetect.first_party_scripts(home["html"], home["url"], max_scripts):
+        try:
+            tech.update(techdetect.detect_in_script(fetcher.get_asset(script_url, max_bytes=SCRIPT_BYTES)))
+            scanned += 1
+        except NetError:
+            continue
+    site["tech"] = sorted(tech)
+    site["scripts_scanned"] = scanned
+    site["client_rendered"] = techdetect.looks_client_rendered(home["html"])
     return site
 
 
@@ -157,6 +174,7 @@ def enrich_search(block: dict[str, Any], search: dict[str, Any], fetcher) -> dic
     cfg = search.get("enrich") or {}
     max_sites = int(cfg.get("max_sites", 300))
     max_pages = int(cfg.get("max_pages", 3))
+    max_scripts = int(cfg.get("max_scripts", 0))   # site bundles to scan for tools; 0 turns it off
     lookup_provider = cfg.get("find_websites")  # e.g. "brave"; unset means no lookups
     cache: dict[str, dict[str, Any]] = {}
     fetched = 0
@@ -179,7 +197,7 @@ def enrich_search(block: dict[str, Any], search: dict[str, Any], fetcher) -> dic
         if domain not in cache:
             if fetched >= max_sites:
                 continue
-            cache[domain] = read_site(rec["website"], fetcher, max_pages)
+            cache[domain] = read_site(rec["website"], fetcher, max_pages, max_scripts)
             fetched += 1
         rec["site"] = cache[domain]
 

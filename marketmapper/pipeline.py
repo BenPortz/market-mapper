@@ -177,7 +177,7 @@ def _for_judge(acct: dict[str, Any]) -> dict[str, Any]:
     """Trim bulky fields. The accounts file is the judge's whole view of a company."""
     site = acct.get("site")
     if site:
-        acct["site"] = {k: site.get(k) for k in ("url", "title", "description", "error")}
+        acct["site"] = {k: site.get(k) for k in ("url", "title", "description", "error", "tech", "client_rendered")}
         acct["site"]["text"] = (site.get("text") or "")[:JUDGE_TEXT_CAP]
     acct["evidence"] = acct["evidence"][:10]
     return acct
@@ -196,8 +196,11 @@ def filter_search(name: str, block: dict[str, Any], profile: Profile, run_date: 
         acct["keyword_hits"] = mf.pattern_hits(mf.relevance_text(acct), search.get("include_any", []))
         acct["size_band"] = mf.size_band(acct)
         acct["filters"] = mf.evaluate(acct, search, profile.filters)
+        acct["tech_status"] = mf.tech_statuses(acct, search)
         acct["seen_recent"] = use_dedup and seen_in(acct["name"], recent_blob)
-        acct["passed"] = mf.passed(acct["filters"], profile.load_bearing) and not acct["seen_recent"]
+        load_bearing = profile.load_bearing + (["tech_ok"] if (search.get("tech_absent") or search.get("tech_present"))
+                                               and "tech_ok" not in profile.load_bearing else [])
+        acct["passed"] = mf.passed(acct["filters"], load_bearing) and not acct["seen_recent"]
         acct["score"] = mf.score(acct, search)
         _for_judge(acct)
 

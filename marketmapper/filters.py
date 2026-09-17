@@ -177,6 +177,19 @@ def signals_for(account: dict[str, Any], policy: dict[str, Any],
             out.append({"kind": "site_mention", "detail": f'Site says "{m.group(0)}"',
                         "url": site.get("url", "")})
 
+    if policy.get("funded") or policy.get("funded_within_days"):
+        days = policy.get("funded_within_days")
+        for ev in account.get("evidence", []):
+            if ev.get("kind") != "funded":
+                continue
+            if days and ev.get("date"):
+                try:
+                    if (today - dt.date.fromisoformat(ev["date"][:10])).days > int(days):
+                        continue
+                except ValueError:
+                    continue
+            out.append({"kind": "funded", "detail": ev.get("detail", "Recently funded"), "url": ev.get("url", "")})
+
     if policy.get("hiring"):
         for ev in account.get("evidence", []):
             if ev.get("kind") == "hiring":
@@ -216,6 +229,25 @@ def relevance_text(account: dict[str, Any]) -> str:
     ])
 
 
+def tech_statuses(account: dict[str, Any], search: dict[str, Any]) -> dict[str, str]:
+    """Status of each tool category the search cares about, e.g. {"chat": "absent_unverified"}."""
+    from marketmapper import techdetect
+    cats = list(dict.fromkeys([*search.get("tech_absent", []), *search.get("tech_present", [])]))
+    return {c: techdetect.status(account.get("site"), c) for c in cats}
+
+
+def tech_ok(account: dict[str, Any], search: dict[str, Any]) -> bool:
+    """`tech_absent` categories must be absent, `tech_present` ones present.
+
+    An absence behind a tag manager counts only when `tech_unverified_ok` is true,
+    and an unreadable site never counts: "we could not tell" is not "they have none".
+    """
+    statuses = tech_statuses(account, search)
+    allowed_absent = {"absent", "absent_unverified"} if search.get("tech_unverified_ok") else {"absent"}
+    return (all(statuses[c] in allowed_absent for c in search.get("tech_absent", []))
+            and all(statuses[c] == "present" for c in search.get("tech_present", [])))
+
+
 def evaluate(account: dict[str, Any], search: dict[str, Any],
              filter_cfg: dict[str, Any]) -> dict[str, bool]:
     """Apply every hard filter to one merged account, one boolean per filter."""
@@ -229,6 +261,7 @@ def evaluate(account: dict[str, Any], search: dict[str, Any],
         "not_excluded": not is_excluded(account, filter_cfg),
         "signal_ok": len(account.get("signals", [])) >= int(search.get("min_signals", 0)),
         "has_website": bool(account.get("website")) or not search.get("require_website"),
+        "tech_ok": tech_ok(account, search),
     }
 
 

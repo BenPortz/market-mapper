@@ -26,7 +26,7 @@ EXAMPLE_PROFILE = Path("config/profile.example.yaml")
 
 GOALS = ("top_n", "market_map")
 DEFAULT_LOAD_BEARING = ["in_region", "relevant", "no_exclude_terms", "not_excluded",
-                        "signal_ok", "has_website"]
+                        "signal_ok", "has_website", "tech_ok"]
 
 
 class ProfileError(RuntimeError):

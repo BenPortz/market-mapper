@@ -92,12 +92,19 @@ class Fetcher:
             time.sleep(wait)
         self._last_hit[host] = time.monotonic()
 
-    def _open(self, req: urllib.request.Request) -> tuple[bytes, str, str]:
+    def _open(self, req: urllib.request.Request, max_bytes: int | None = None,
+              truncate: bool = True) -> tuple[bytes, str, str]:
         req.add_header("User-Agent", self.user_agent)
         self._throttle(req.full_url)
+        cap = max_bytes or self.max_bytes
         try:
             with self._opener.open(req, timeout=self.timeout) as resp:
-                body = resp.read(self.max_bytes + 1)[: self.max_bytes]
+                body = resp.read(cap + 1)
+                if len(body) > cap:
+                    if not truncate:
+                        # Cutting a JSON or XML document in half corrupts it silently.
+                        raise NetError(f"response from {req.full_url} is larger than {cap:,} bytes")
+                    body = body[:cap]
                 return body, resp.geturl(), resp.headers.get("Content-Type", "")
         except urllib.error.HTTPError as e:
             raise NetError(f"HTTP {e.code} from {req.full_url}") from e
@@ -107,11 +114,16 @@ class Fetcher:
     # -- APIs --------------------------------------------------------------
 
     def get_json(self, url: str, params: dict[str, Any] | None = None,
-                 headers: dict[str, str] | None = None) -> Any:
+                 headers: dict[str, str] | None = None, max_bytes: int | None = None) -> Any:
         if params:
             url = f"{url}?{urllib.parse.urlencode(params, doseq=True)}"
-        body, _, _ = self._open(urllib.request.Request(url, headers=headers or {}))
+        body, _, _ = self._open(urllib.request.Request(url, headers=headers or {}), max_bytes, truncate=False)
         return json.loads(body.decode("utf-8"))
+
+    def get_text(self, url: str, headers: dict[str, str] | None = None, max_bytes: int | None = None) -> str:
+        """A whole text document (XML, CSV) from a fixed API host; refuses to truncate."""
+        body, _, _ = self._open(urllib.request.Request(url, headers=headers or {}), max_bytes, truncate=False)
+        return body.decode("utf-8", "replace")
 
     def post_json(self, url: str, form: dict[str, str] | None = None,
                   json_body: Any = None, headers: dict[str, str] | None = None) -> Any:
@@ -121,7 +133,7 @@ class Fetcher:
             hdrs["Content-Type"] = "application/json"
         else:
             data = urllib.parse.urlencode(form or {}).encode("utf-8")
-        body, _, _ = self._open(urllib.request.Request(url, data=data, headers=hdrs))
+        body, _, _ = self._open(urllib.request.Request(url, data=data, headers=hdrs), truncate=False)
         return json.loads(body.decode("utf-8"))
 
     # -- websites ----------------------------------------------------------
@@ -139,6 +151,18 @@ class Fetcher:
             self._robots[origin] = parser
         parser = self._robots[origin]
         return parser is None or parser.can_fetch(self.user_agent, url)
+
+    def get_asset(self, url: str, max_bytes: int | None = None) -> str:
+        """A text asset (a site's JavaScript bundle) from an arbitrary host.
+
+        Same guardrails as a page: public host only, robots.txt honored, and an
+        oversized file is refused rather than truncated.
+        """
+        check_url(url)
+        if not self.allowed_by_robots(url):
+            raise NetError(f"blocked by robots.txt: {url}")
+        body, _, _ = self._open(urllib.request.Request(url), max_bytes, truncate=False)
+        return body.decode("utf-8", "replace")
 
     def get_page(self, url: str) -> dict[str, str]:
         """Fetch one public web page. Returns {url, content_type, html}."""

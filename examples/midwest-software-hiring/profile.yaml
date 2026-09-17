@@ -1,0 +1,33 @@
+# The exact search used for this example. Copy it under `searches:` in your own config/profile.yaml.
+
+searches:
+  midwest_software_hiring:
+    label: "Software companies in the Midwest that are hiring"
+    goal: market_map
+    region:
+      label: "Midwest (IL, IN, IA, MI, MN, MO, OH, WI)"
+      countries: [US]
+      regions: [IL, IN, IA, MI, MN, MO, OH, WI]
+    sources:
+      - type: yc_directory
+        industries: [B2B, Fintech, Healthcare, Education, Government, "Real Estate and Construction"]
+        statuses: [Active]
+        batch_since: 2022
+      # Recent fundraising from SEC Form D. Not used in the published example run:
+      # SEC refused requests carrying a declared contact user agent from the network
+      # that produced it. Set http.user_agent to "Name you@example.com" and uncomment.
+      # - type: sec_form_d
+      #   days: 365
+      #   industry_groups: ["Computers", "Telecommunications", "Other Technology"]
+    signals:
+      hiring: true
+      funded: true
+    min_signals: 1
+    region_strict: true
+    require_website: true
+    enrich:
+      max_sites: 100
+      max_pages: 2
+    judge:
+      limit: 0
+    dedup: false

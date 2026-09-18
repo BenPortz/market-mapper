@@ -19,7 +19,7 @@ structure for the boards that fit your market.
 
 ## Why snippets live in files instead of in the prompt
 
-The agent runs these **verbatim**. It does not write JavaScript at runtime.
+The agent runs these verbatim and does not write JavaScript at runtime.
 
 A model that writes its own page script can be steered by whatever it just read.
 Posting text is untrusted input, and pages containing text like "ignore previous
@@ -29,14 +29,14 @@ incorrectly; it cannot cause anything to run.
 
 ## Rules every snippet follows
 
-- **Read-only.** Reads the DOM. Never `fetch`/XHR, never submits a form, never
-  navigates, never writes to storage.
-- **Bounded output.** Text is capped so one page cannot flood the pipeline.
-- **Namespaced ids.** Each board prefixes its ids (`yc_123`) so boards never collide.
-- **Companies, not people.** Company and role data only. Never names, emails, or
+- Snippets only read the DOM. They never call `fetch` or XHR, submit a form,
+  navigate, or write to storage.
+- Output text is capped so one page cannot flood the pipeline.
+- Each board prefixes its ids (`yc_123`) so boards never collide.
+- Snippets collect company and role data only, never the names, emails, or
   profiles of individual employees or recruiters.
-- **No credentials.** If a board needs a login, a person signs in by hand. The
-  pipeline never sees or stores a password or session token.
+- If a board needs a login, a person signs in by hand. The pipeline never sees
+  or stores a password or session token.
 
 ## Output file
 
@@ -63,4 +63,4 @@ signals:
 Boards change markup without warning. Selectors here are intentionally loose
 (attribute-contains, not exact class names). When a snippet starts returning
 zero results, that is usually drift, and the discover stage reports the postings
-source as failed instead of silently shrinking the market.
+source as failed.

@@ -68,7 +68,7 @@ def test_funnel_line_shows_every_stage(rendered):
     assert "Sources: npi 5, osm 3. 8 records → 7 companies → 2 passed filters → 2 judged → 2 kept → 0 rejected." in rendered
 
 
-def test_shortfall_is_stated_honestly(rendered):
+def test_shortfall_is_stated(rendered):
     assert "**Delivered 2 of 20.** Only 2 in-region practices had a timing signal" in rendered
 
 

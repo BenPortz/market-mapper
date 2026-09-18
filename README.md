@@ -1,6 +1,6 @@
 # market-mapper
 
-Find the companies in a market from public records, verify each one from its own website, and have Claude judge them against what *you* sell, with code checking every step the model takes.
+Finds the companies in a market from public records, reads each company's website, filters them in code, and has Claude judge which ones fit what you sell. The output is a report and a CSV ready for a CRM.
 
 [![tests](https://github.com/BenPortz/market-mapper/actions/workflows/tests.yml/badge.svg)](https://github.com/BenPortz/market-mapper/actions/workflows/tests.yml)
 
@@ -9,30 +9,34 @@ market-mapper run --search b2b_software_no_chat
 # discover -> enrich -> filter -> judge -> buyers -> report, each stage also runnable on its own
 ```
 
-**What it demonstrates**
+## What it does
 
-- **An LLM boxed in by code.** The judge has no tools and must return structured output. Code guarantees one decision per company, strips any claim that does not cite the seller's own context, and fails loudly on refusals or truncation. ([judge.py](marketmapper/judge.py))
-- **Messy real data, merged honestly.** Registries, maps, certifications, OSHA filings, SEC filings, directories, and web search describe the same company differently. Records merge by website or name and city, independent of order, and never across two different websites.
-- **Signals, not vibes.** Hiring, recent funding, a newly registered practice, which chat widget a site runs: each is a fact with a link to its source, used to rank and filter.
-- **Measured coverage and failure.** Census counts measure how complete a list is. A failed source is reported as failed, a site that cannot be read is "unknown" rather than "no", and a vendor name is only matched when every word of it matches. The $2.9 billion false match that rule prevents is a test case.
-- **Guardrails.** Private-address blocking on every fetch and redirect, robots.txt, rate limits, no page script executed, no personal contact data collected, nothing ever sent.
+Companies come from registries, maps, certification listings, OSHA and SEC filings, directories, web search, and CSV lists you already have. Records for the same company merge by website, or by normalized name and city, in any order. Two records with different websites never merge.
 
-**Three real runs**
+The pipeline reads each company's website and records what it says and which chat, scheduler, and tag manager scripts it loads. Region, keyword, exclusion, and ranking rules run in plain Python, so they are reproducible and tested.
 
-| Example | Question | What came out |
+Claude judges fit. The judge has no tools and returns structured output. Code checks that every company gets exactly one decision, removes any claim that does not cite the seller's own context files, and raises an error on refusals or truncated output ([judge.py](marketmapper/judge.py)).
+
+Hiring, recent funding, a recent registration, and the tools on a site are stored as signals with a link to their source, and used to rank and filter. Census counts show how complete a list is. A failed source is reported as failed, an unreadable site is "unknown" rather than "no", and a vendor name is matched only when every word of it matches.
+
+Public purchase records show which listed companies sell to government buyers, and which other vendors those buyers pay.
+
+Every fetch blocks private addresses on the request and on each redirect, honors robots.txt, is rate limited per host, and runs no page script. No personal contact data is collected and nothing is ever sent.
+
+## Examples
+
+| Example | Question | Result |
 | --- | --- | --- |
-| [B2B software with no chat widget](examples/b2b-software-no-chat/) | Which hiring US B2B software companies have no chat or AI assistant on their site? | 126 verified with no widget out of 298; 132 more could not be confirmed either way |
-| [Midwest software, funded or hiring](examples/midwest-software-hiring/) | Which Midwest venture-backed software companies are growing right now? | 18 companies from 38; six both recently funded and hiring |
-| [Chicago water valve manufacturers](examples/chicago-water-valves/) | Who makes valves for water in the Chicago metro, and who buys them? | 9 from web search became 14 with certification and OSHA records; federal buyers purchase through distributors |
-
----
+| [B2B software with no chat widget](examples/b2b-software-no-chat/) | Which hiring US B2B software companies have no chat or AI assistant on their site? | 126 verified with no widget out of 298. 132 more could not be confirmed either way. |
+| [Midwest software, funded or hiring](examples/midwest-software-hiring/) | Which Midwest venture-backed software companies are growing right now? | 18 companies from 38. Six are both recently funded and hiring. |
+| [Chicago water valve manufacturers](examples/chicago-water-valves/) | Who makes valves for water in the Chicago metro, and who buys them? | 9 from web search became 14 with certification and OSHA records. Federal buyers purchase through distributors. |
 
 ## Two kinds of search
 
 | Goal | Example | What you get |
 | --- | --- | --- |
-| `market_map` | "Find as many conveyor belt manufacturers as you can in OH, MI, IN, WI" | Every company that passes the filters, with the judge removing false positives. Completeness matters most. |
-| `top_n` | "Find 20 dental practices in Oregon likely to buy x-ray equipment" | The best `target_count` accounts, each with why it fits, timing signals, risks, and an optional draft. If fewer qualify, the report says so instead of padding the list. |
+| `market_map` | "Find as many conveyor belt manufacturers as you can in OH, MI, IN, WI" | Every company that passes the filters, minus the ones the judge rejects as not in the market. |
+| `top_n` | "Find 20 dental practices in Oregon likely to buy x-ray equipment" | The best `target_count` accounts, each with why it fits, timing signals, risks, and an optional draft. If fewer qualify, the report states the shortfall. |
 
 ## Where companies come from
 
@@ -42,24 +46,21 @@ market-mapper run --search b2b_software_no_chat
 | `osm` | Storefront and facility businesses anywhere, filtered by map tags and region (OpenStreetMap). Often carries a website. | No |
 | `web_search` | Anything with a website: manufacturers, integrators, service firms. Query templates are expanded once per place in the region, and directories and social sites are dropped. | Brave or Tavily |
 | `csv` | Lists you already have: trade association members, trade show exhibitors, dealer locators, CRM exports. Often the most complete list of an industry that exists. | No |
-| `nsf` | Manufacturers of products certified for drinking water and plumbing (NSF/ANSI 61 and related listings), filtered by the state of the **plant**. Certification is required to sell into potable water, so small makers appear whether or not they rank in search. | No |
-| `osha_ita` | Plants that file OSHA injury summaries (every manufacturing establishment with 20+ employees), filtered by NAICS code and ZIP. The only source that gives **headcount**. Reads the public CSV from osha.gov/itadata. | No |
+| `nsf` | Manufacturers of products certified for drinking water and plumbing (NSF/ANSI 61 and related listings), filtered by the state of the plant. Certification is required to sell into potable water, so small makers appear whether or not they rank in search. | No |
+| `osha_ita` | Plants that file OSHA injury summaries (every manufacturing establishment with 20+ employees), filtered by NAICS code and ZIP. The only source that gives headcount. Reads the public CSV from osha.gov/itadata. | No |
 | `yc_directory` | Software companies from the Y Combinator directory (a public JSON mirror): website, locations, industry, tags, team size, batch, and hiring status. A recent batch becomes a "funded" signal; an open hiring flag becomes a "hiring" signal. | No |
 | `sec_form_d` | Companies that just raised money, from SEC Form D filings: issuer, address, industry group, and amount sold. Funds and SPVs are dropped; the named people in a filing are never read. Needs a user agent with a contact email, per SEC policy. | No |
-| `postings` | Companies that are hiring, collected by a browser agent from job boards that filter by location. A timing signal, not the backbone. See [`sources/browser/`](marketmapper/sources/browser/). | No |
+| `postings` | Companies that are hiring, collected by a browser agent from job boards that filter by location. Used as a timing signal. See [`sources/browser/`](marketmapper/sources/browser/). | No |
 
-Adding a source is one module with a `discover()` function that returns records in the shared shape. Obvious next candidates are SAM.gov (by NAICS code), ASSE and IAPMO product listings, and national company registries like UK Companies House.
+Adding a source is one module with a `discover()` function that returns records in the shared shape. Likely next candidates are SAM.gov (by NAICS code), ASSE and IAPMO product listings, and national company registries like UK Companies House.
 
 ## Coverage mode: finding the smaller companies
 
-Search engines rank by traffic, so the same well-known brands fill every results page. A default run is good at finding the leaders in a market and bad at finding the 40-person shop two exits down the highway. Coverage mode is a set of settings on a search that fixes that without throwing the leaders away:
+Search engines rank by traffic, so the same well-known brands fill every results page. A default run finds the leaders in a market and misses small local shops. Coverage mode is a set of search settings that adds the small companies without dropping the leaders.
 
-- **Sources that ignore popularity.** `nsf` and `osha_ita` list companies because they are certified or because they employ people, not because they rank well.
-- **Company size on every account.** `size_band` comes from OSHA headcount when there is a filing, or from a site describing itself as family owned. It is exported to the CSV and shown in the report.
-- **`prefer: small`** lifts known and likely small companies in the ranking, so the judge reads them first. Large companies still pass the filters and still appear; they just stop crowding the top.
-- **A coverage check.** `market-mapper benchmark` pulls Census County Business Patterns counts for the search's NAICS codes and counties (free key in `CENSUS_API_KEY`), and the report states the gap between the Census count and the list. It names nobody, so it can only measure the list, never pad it.
+The `nsf` and `osha_ita` sources list companies because they are certified or because they employ people, so search ranking does not affect them. Each account gets a `size_band`, from OSHA headcount when there is a filing or from a site describing itself as family owned, and the band is exported to the CSV and shown in the report. Setting `prefer: small` lifts known and likely small companies in the ranking so the judge reads them first; large companies still pass the filters and still appear. `market-mapper benchmark` pulls Census County Business Patterns counts for the search's NAICS codes and counties (free key in `CENSUS_API_KEY`), and the report states the gap between the Census count and the list. The Census data names no companies, so it can measure the list but cannot add to it.
 
-On a Chicago water valve search, adding the two coverage sources to the same web search candidates took the list from 9 to 14 manufacturers. The new names included a 180-person flush valve plant and two valve makers with under 40 employees, none of which appeared in any search result. It also confirmed which brand offices actually have local manufacturing.
+On a Chicago water valve search, adding the two coverage sources to the same web search candidates took the list from 9 to 14 manufacturers. The new names included a 180-person flush valve plant and two valve makers with under 40 employees, none of which appeared in any search result. It also confirmed which brand offices have local manufacturing.
 
 ## What a company's website runs
 
@@ -71,20 +72,15 @@ tech_present: [scheduler]    # but a demo booking tool
 tech_unverified_ok: false    # a tag manager could hide a widget; do not count those as absent
 ```
 
-Detection reads script tags and embed URLs only, so a blog post that mentions Intercom is not a detection. It also reports what it cannot see instead of guessing: a widget injected through Google Tag Manager never appears in the page HTML, so "no chat, but a tag manager" is its own status (`absent_unverified`), and a site that builds itself in JavaScript or refuses the request is `unknown`. Neither counts as "has no chat". The report states how many companies landed in each status.
+Detection reads script tags and embed URLs only, so a blog post that mentions Intercom is not a detection. It also reports what it cannot see. A widget injected through Google Tag Manager never appears in the page HTML, so "no chat, but a tag manager" is its own status (`absent_unverified`), and a site that builds itself in JavaScript or refuses the request is `unknown`. Neither counts as "has no chat". The report states how many companies landed in each status.
 
 ## Who buys: public purchase records
 
-A list of companies answers "who could I sell to." A salesperson also wants to know who those companies sell to, and who buys this kind of product at all. Most business-to-business sales leave no public record, but government purchasing does. `market-mapper buyers` reads the finished list and looks up:
+A list of companies answers "who could I sell to." A salesperson also wants to know who those companies sell to, and who buys this kind of product at all. Most business-to-business sales leave no public record, but government purchasing does. `market-mapper buyers` reads the finished list and looks up each listed company as a vendor in federal contract awards (USAspending.gov, no key) and in city, county, or state contracts published on any Socrata open data portal. It also looks up the market as a whole: awards for the search's NAICS codes and product keywords, delivered in the search region.
 
-- **Each listed company as a vendor** in federal contract awards (USAspending.gov, no key) and in city, county, or state contracts published on any Socrata open data portal.
-- **The market as a whole:** awards for the search's NAICS codes and product keywords, delivered in the search region.
+The report gains a "Who buys" section with the listed companies that sell to public buyers, the largest buyers, and the vendors those buyers pay who are not on the list, which are usually the distributors and competitors a salesperson needs to know about. Every purchase is exported to `<search>-purchases.csv` with a link to its source record.
 
-The report gains a "Who buys" section with the listed companies that sell to public buyers, the largest buyers, and the vendors those buyers pay who are **not** on the list, which are usually the distributors and competitors a salesperson needs to know about. Every purchase is exported to `<search>-purchases.csv` with a link to its source record.
-
-Matching purchase records to companies is where this goes wrong quietly, so it is strict: a vendor must contain every word of the company's name after legal suffixes, abbreviations ("MFG"), and plurals are normalized. An early version matched on distinctive words only and credited a Chicago valve company with $2.9 billion that belonged to an ad agency and a university; those names are now regression tests.
-
----
+Matching purchase records to companies is strict: a vendor must contain every word of the company's name after legal suffixes, abbreviations ("MFG"), and plurals are normalized. An early version matched on distinctive words only and credited a Chicago valve company with $2.9 billion of awards that belonged to an ad agency and a university. Those names are now regression tests.
 
 ## Architecture
 
@@ -103,51 +99,47 @@ flowchart LR
 
 | Stage | Runs as | Why it is separate |
 | --- | --- | --- |
-| **DISCOVER** | Python against public APIs | Structured sources are cheaper, faster, and more complete than a model browsing |
-| **ENRICH** | Python, bounded fetches | A registry says a company exists; its website says what it actually does |
-| **FILTER** | Pure Python | Merging, region checks, keywords, exclusions, and ranking are rules. Rules belong in code, where they are reproducible and testable. |
-| **JUDGE** | Claude API, no tools | Deciding whether a company really fits *your* offer is the only step that needs judgment |
-| **BUYERS** | Python against public APIs | Purchase records are facts to look up, not judgments; the list is never changed by them |
-| **WRITE** | Pure Python | The report and CSVs render from data, so their structure never drifts |
+| DISCOVER | Python against public APIs | Structured sources are cheaper, faster, and more complete than a model browsing |
+| ENRICH | Python, bounded fetches | A registry says a company exists; its website says what it does |
+| FILTER | Pure Python | Merging, region checks, keywords, exclusions, and ranking are rules, and rules in code are reproducible and testable |
+| JUDGE | Claude API, no tools | Deciding whether a company fits the seller's offer is the only step that needs judgment |
+| BUYERS | Python against public APIs | Purchase records are looked up after the list is final, and the list is never changed by them |
+| WRITE | Pure Python | The report and CSVs render from data, so their structure never drifts |
 
 ### Why the stages are separate
 
 The model never both gathers the evidence and grades it. If one agent searched and judged in a single pass, whatever it happened to find would become the evidence for its own conclusion, and every company would start to look like a fit. Here, code decides which companies qualify, and the judge only reads companies that already cleared the rules. The judge has no network access at all.
 
-Separation also keeps failures visible. Each source reports its own status, so an expired API key shows up as "web_search FAILED" in the report and not as a suspiciously small market.
+Separation also keeps failures visible. Each source reports its own status, so an expired API key shows up as "web_search FAILED" in the report rather than as a small market.
 
 ### Design notes
 
-**One company, many records.** The same dental practice shows up as `92ND TERRACE DENTAL LLC` in the registry, "Marrowstone Dental Group" on the map, and a website under a third spelling. FILTER groups records that share a website domain, or a normalized name in the same city. Grouping is transitive and does not depend on record order (there is a test that shuffles the input). Two records with different websites never merge, even when the names match.
+The same dental practice shows up as `92ND TERRACE DENTAL LLC` in the registry, "Marrowstone Dental Group" on the map, and a website under a third spelling. FILTER groups records that share a website domain, or a normalized name in the same city. Grouping is transitive and does not depend on record order (there is a test that shuffles the input). Two records with different websites never merge, even when the names match.
 
-**The company's own words decide relevance.** Keyword rules run against the name, categories, website text, and search snippets. A belt repair shop that ranks for "conveyor manufacturer" is caught by `exclude_any` when its own site says "repair and used equipment."
+Keyword rules run against the name, categories, website text, and search snippets, so a company's own words decide relevance. A belt repair shop that ranks for "conveyor manufacturer" is caught by `exclude_any` when its own site says "repair and used equipment."
 
-**Honest about region.** An address is the strongest evidence, a site that names in-region places counts, and anything else is `unknown`. Each search decides whether unknown passes (`region_strict`). Registry searches set it strict, and web search market maps usually don't.
+For region, an address is the strongest evidence, a site that names in-region places counts, and anything else is `unknown`. Each search decides whether unknown passes (`region_strict`). Registry searches set it strict, and web search market maps usually don't.
 
-**Timing signals are data, not vibes.** A recent registry date, "now open" or "new facility" on the site, or open job postings become signals with a link to their source. `top_n` searches can require them (`min_signals`), and ranking weighs them most.
+A recent registry date, "now open" or "new facility" on the site, or open job postings become timing signals with a link to their source. `top_n` searches can require them (`min_signals`), and ranking weighs them most.
 
-**Every claim cites the seller's context.** The judge can only argue fit using the seller's context files. Each point names the proof id or ideal customer section it came from. A result that is not written in `proof.md` cannot appear in a report or a draft.
+The judge can only argue fit using the seller's context files. Each point names the proof id or ideal customer section it came from. A result that is not written in `proof.md` cannot appear in a report or a draft.
 
-**The judge is boxed in by code.** `market-mapper judge` sends Claude the rules ([`judge_rules.md`](marketmapper/prompts/judge_rules.md)), the seller's context, and the company records, with no tools, and constrains the reply to a JSON schema. Code then enforces what a prompt can only ask for: every queued company gets exactly one decision (a skipped company is recorded as "no decision returned", never dropped), ids the model invents are ignored, any `why_fit` point that does not cite a real heading in the context files is removed, a top-N list is cut to the target with the shortfall stated, and drafts appear only when enabled. The rules and context sit in a cached prefix, so batches after the first mostly pay for the company records. Refusals fall back server-side; truncated or invalid output fails loudly instead of writing a partial file.
+`market-mapper judge` sends Claude the rules ([`judge_rules.md`](marketmapper/prompts/judge_rules.md)), the seller's context, and the company records, with no tools, and constrains the reply to a JSON schema. Code then checks the reply: every queued company gets exactly one decision (a skipped company is recorded as "no decision returned", never dropped), ids the model invents are ignored, any `why_fit` point that does not cite a real heading in the context files is removed, a top-N list is cut to the target with the shortfall stated, and drafts appear only when enabled. The rules and context sit in a cached prefix, so batches after the first mostly pay for the company records. Refusals fall back server-side; truncated or invalid output raises an error instead of writing a partial file.
 
-**Schema-validated handoffs.** [`marketmapper/schemas/`](marketmapper/schemas/) defines each contract. When the judge's output drifts, it fails as a schema error instead of producing a broken CSV.
+[`marketmapper/schemas/`](marketmapper/schemas/) defines the contract between stages. When the judge's output drifts, it fails as a schema error instead of producing a broken CSV.
 
-**Rerunnable stages.** Each stage writes a dated file. Re-run the judge against frozen accounts while tuning the prompt, or re-render without calling the model.
-
----
+Each stage writes a dated file, so you can re-run the judge against frozen accounts while tuning the prompt, or re-render without calling the model.
 
 ## Security and conduct
 
 The pipeline reads a lot of untrusted third-party content, and its output is used to contact real businesses.
 
-- **Website text is data.** A site containing *"ignore previous instructions"* is stored as text, and the judge is told to reject that company, not obey it. Scripts and styles are dropped during parsing.
-- **Guarded fetching.** Every request goes through [`net.py`](marketmapper/net.py). It allows only http(s), resolves the host and refuses private, loopback, and link-local addresses (checked again on every redirect). It honors robots.txt, rate-limits per host, sends an identifying User-Agent, and caps response size. A poisoned listing pointing at an internal address goes nowhere.
-- **No injection into queries.** Values that go into the OpenStreetMap query language are checked against a safe character set, not escaped.
-- **Organizations, not people.** The NPI source requests organization records only and never copies the registry's named official. Email addresses are stripped from website text. The judge names a role to contact, never a person.
-- **Nothing is sent.** No stage can send email or messages. Drafts go to a CSV with `status=draft`.
-- **Keys stay in the environment.** Search API keys are read from environment variables, never from the profile.
-
----
+- Website text is stored as data. A site containing "ignore previous instructions" is kept as text, and the judge is told to reject that company. Scripts and styles are dropped during parsing.
+- Every request goes through [`net.py`](marketmapper/net.py). It allows only http(s), resolves the host and refuses private, loopback, and link-local addresses (checked again on every redirect), honors robots.txt, rate-limits per host, sends an identifying User-Agent, and caps response size.
+- Values that go into the OpenStreetMap query language are checked against a safe character set rather than escaped.
+- Sources describe organizations, not people. The NPI source requests organization records only and never copies the registry's named official. Email addresses are stripped from website text. The judge names a role to contact, never a person.
+- No stage can send email or messages. Drafts go to a CSV with `status=draft`.
+- Search API keys are read from environment variables, never from the profile.
 
 ## Your company's context
 
@@ -160,9 +152,7 @@ Everything company-specific lives in two gitignored places:
   - `proof.md`: results you can back up, each under an id heading
   - `constraints.md`: what must never be claimed or promised
 
-`config/profile.example.yaml` and `context.example/` belong to a fictional seller, Acme Radiography, and every company in `tests/fixtures/` is invented. The run in `examples/` uses real public records.
-
----
+`config/profile.example.yaml` and `context.example/` belong to a fictional seller, Acme Radiography, and every company in `tests/fixtures/` is invented. The runs in `examples/` use real public records.
 
 ## Quickstart
 
@@ -194,13 +184,11 @@ The judge uses `claude-opus-5` at `high` effort by default; set `judge.model`, `
 pip install -e ".[dev]" && pytest -q     # no network, no API keys needed
 ```
 
----
-
 ## Layout
 
 ```
 marketmapper/
-  net.py           The only module that touches the network, with its guardrails
+  net.py           The only module that touches the network, with its safety checks
   sources/         One module per company source, plus browser snippets for job boards
   discover.py      DISCOVER: run each search's sources
   enrich.py        ENRICH: read company websites into bounded text
@@ -217,8 +205,8 @@ marketmapper/
 config/            Example profile (real one gitignored)
 context.example/   Example seller context for a fictional company
 prompts/judge.md   The judge stage as instructions for an interactive agent
-tests/             273 tests, no network or API keys, fabricated fixtures
-examples/          Three real runs: see the table at the top
+tests/             273 tests, no network or API keys, invented fixtures
+examples/          Three runs on real public records, listed in the table at the top
 ```
 
 Map data from OpenStreetMap is (c) OpenStreetMap contributors under the ODbL. Keep that attribution if you publish results built on it.

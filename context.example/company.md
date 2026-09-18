@@ -5,9 +5,9 @@ information. `context/` is gitignored.
 
 ## What we sell
 
-- **Digital dental x-ray.** Intraoral sensors, panoramic units, and install,
+- Digital dental x-ray: intraoral sensors, panoramic units, and install,
   training, and service for dental practices.
-- **Inline x-ray inspection.** Foreign-object detection units that mount over
+- Inline x-ray inspection: foreign-object detection units that mount over
   an existing production conveyor, for food, pharmaceutical, and packaging lines.
   Sold direct and through conveyor manufacturers who spec them into new lines.
 

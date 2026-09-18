@@ -2,7 +2,7 @@
 
 Hiring is a timing signal: a plant posting for a maintenance manager, or a
 clinic hiring its second radiology tech, is changing something now. Postings are
-one input among several here, not the backbone.
+one input among several here.
 
 Most boards render client-side, so collection runs in a browser agent using the
 pinned, read-only snippets in `sources/browser/` (see the README there). The

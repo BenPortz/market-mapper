@@ -40,7 +40,7 @@ For each company you keep:
   context files (a proof id, or an ideal-customer section heading). A point
   without a real context_id is not allowed.
 - signals: copy the timing signals from the record that matter, with their URLs.
-- risks: honest reasons this may not land. At least one.
+- risks: reasons this may not land. At least one.
 - contact_role: a role, never a name.
 - draft: only when drafts are enabled for the search and fit is strong.
 
@@ -48,7 +48,7 @@ Goals:
 - top_n: keep at most target_count, best first. If fewer qualify, keep fewer and
   explain the shortfall in none_reason. Never lower the bar to reach the number.
 - market_map: keep everything genuinely in the market. Completeness matters more
-  than ranking; the point is removing false positives.
+  than ranking, and your job here is removing false positives.
 
 ## Honesty
 

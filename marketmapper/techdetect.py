@@ -13,14 +13,14 @@ real browser: two of eight were running Intercom, one via markup and one via a
 bundle, and both are now caught.
 
 Nothing is executed, so two blind spots remain, and both are carried into every
-result instead of being hidden:
-- **Tag managers and vendor loaders.** A widget configured inside Google Tag
+result:
+- Tag managers and vendor loaders. A widget configured inside Google Tag
   Manager or Segment, or switched on in HubSpot's settings behind its standard
   tracking script, is fetched at runtime and never appears in the page code. When
   one of these is present and no chat is found, the status is
   `absent_unverified`, not `absent`. (The browser check found HubSpot chat on two
   of six such sites.)
-- **Client-rendered sites.** When the HTML is a near-empty application shell, the
+- Client-rendered sites. When the HTML is a near-empty application shell, the
   status is `unknown`.
 """
 

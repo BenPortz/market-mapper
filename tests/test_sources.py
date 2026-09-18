@@ -157,7 +157,7 @@ def test_web_search_expands_places_and_dedups_by_domain(monkeypatch):
     assert fetcher.calls[0][3]["X-Subscription-Token"] == "test-key"
 
 
-def test_web_search_without_a_key_fails_loudly(monkeypatch):
+def test_web_search_without_a_key_raises(monkeypatch):
     monkeypatch.delenv("BRAVE_API_KEY", raising=False)
     with pytest.raises(SourceError, match="BRAVE_API_KEY"):
         web_search.discover({"queries": ["x"]}, OREGON, FakeFetcher(), {})

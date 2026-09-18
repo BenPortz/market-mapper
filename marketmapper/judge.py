@@ -6,17 +6,17 @@ records as text, and returns a structured decision for each company. It cannot
 search, browse, or fetch, so it can only weigh evidence the earlier stages
 already gathered.
 
-What code enforces around the model, rather than trusting it to comply:
-- **Structured output.** The response is constrained to a JSON schema, then the
-  assembled verdicts are validated against `schemas/verdicts.schema.json`.
-- **Every company gets exactly one decision.** A queued company the model skips
-  is recorded as rejected with "no decision returned", never silently dropped.
-  Ids the model invents are ignored.
-- **No citation, no claim.** Each `why_fit` point must name a heading that exists
-  in the context files. Points citing anything else are removed.
-- **Goals.** A top_n search keeps at most `target_count`, highest fit first, and
-  states a shortfall when fewer qualify. Drafts appear only when the search
-  enables them and the fit is strong.
+Code checks the model's output rather than trusting it to comply:
+- The response is constrained to a JSON schema, then the assembled verdicts are
+  validated against `schemas/verdicts.schema.json`.
+- Every company gets exactly one decision. A queued company the model skips is
+  recorded as rejected with "no decision returned" rather than dropped. Ids the
+  model invents are ignored.
+- Each `why_fit` point must name a heading that exists in the context files.
+  Points citing anything else are removed.
+- A top_n search keeps at most `target_count`, highest fit first, and states a
+  shortfall when fewer qualify. Drafts appear only when the search enables them
+  and the fit is strong.
 
 Record text is untrusted third-party content. It is passed inside a delimited
 block and the rules tell the model to treat it as data.

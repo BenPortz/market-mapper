@@ -7,11 +7,10 @@ industries that sell to utilities, public works, the military, or schools
 (water valves, pipe, pumps, safety equipment), that record is a real map of who
 buys what, from whom, for how much.
 
-The stage answers three questions for each search:
-- **For each company on the list:** which public buyers has it sold to?
-- **For the market:** which buyers spend the most on this kind of product?
-- **Who else those buyers use:** vendors that are not on the list, which are
-  usually distributors or competitors, and both matter to a salesperson.
+The stage answers three questions for each search: which public buyers each
+company on the list has sold to, which buyers spend the most on this kind of
+product, and which other vendors those buyers use. The last group is usually
+distributors or competitors, and both matter to a salesperson.
 
 It reads the deliverable list (after the judge, if it ran) and never changes it.
 

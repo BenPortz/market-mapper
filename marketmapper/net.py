@@ -3,16 +3,16 @@
 Every source and the website enricher go through a `Fetcher`, which gives each
 of them the same guardrails:
 
-- **Public hosts only.** Company websites come from third-party data, so a URL
-  is untrusted input. Before any request (and on every redirect) the host is
-  resolved and rejected if any address is private, loopback, or link-local. A
-  poisoned record pointing at `http://169.254.169.254/` or a router admin page
-  goes nowhere.
-- **robots.txt is honored** for website fetches.
-- **Polite by default.** A minimum interval between requests to the same host,
-  an identifying User-Agent, and a timeout.
-- **Bounded reads.** Responses are capped, so one enormous page cannot exhaust
-  memory or the judge's context.
+- Public hosts only. Company websites come from third-party data, so a URL is
+  untrusted input. Before any request (and on every redirect) the host is
+  resolved and rejected if any address is private, loopback, or link-local, so
+  a record pointing at `http://169.254.169.254/` or a router admin page is
+  refused.
+- robots.txt is honored for website fetches.
+- A minimum interval between requests to the same host, an identifying
+  User-Agent, and a timeout.
+- Responses are capped, so one enormous page cannot exhaust memory or the
+  judge's context.
 
 Tests replace the Fetcher with a fake, so nothing in the test suite hits the network.
 """

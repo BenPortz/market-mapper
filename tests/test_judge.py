@@ -227,7 +227,7 @@ def test_missing_context_file_is_an_error(tmp_path, accounts, monkeypatch):
 
 
 def test_rules_file_ships_with_the_package():
-    assert "No citation" in j.__doc__ and j.RULES_PATH.is_file()
+    assert "heading that exists in the context files" in j.__doc__ and j.RULES_PATH.is_file()
 
 
 def test_cli_dispatches_and_run_passes_shared_flags(monkeypatch):

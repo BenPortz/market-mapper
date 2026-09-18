@@ -1,6 +1,6 @@
 """ENRICH stage: read each company's own website -> records with site text.
 
-A registry says a company exists. Its website says what it actually does. The
+A registry says a company exists. Its website says what it does. The
 judge needs the second, so this stage fetches the homepage plus a few pages
 whose paths look like "about", "products", or "industries", and keeps bounded
 plain text.
@@ -121,7 +121,7 @@ def read_site(website: str, fetcher, max_pages: int, max_scripts: int = 0) -> di
         raw_pages.append(page["html"])
         site["pages"].append(page["url"])
     site["text"] = "\n\n".join(texts)[:SITE_TEXT_CAP]
-    # Tools are read from the embed code of the pages actually fetched; the raw HTML
+    # Tools are read from the embed code of the pages fetched; the raw HTML
     # itself is not stored.
     tech = set(techdetect.detect(raw_pages))
     scanned = 0

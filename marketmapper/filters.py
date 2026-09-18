@@ -265,13 +265,13 @@ def evaluate(account: dict[str, Any], search: dict[str, Any],
     }
 
 
-def passed(filters: dict[str, bool], load_bearing: list[str]) -> bool:
-    """True when every load-bearing filter passed.
+def passed(filters: dict[str, bool], knockouts: list[str]) -> bool:
+    """True when every knockout filter passed.
 
-    Filters outside `load_bearing` are still reported so the judge and the
+    Filters outside `knockouts` are still reported so the judge and the
     report can cite them, but they do not by themselves drop an account.
     """
-    return all(filters.get(name, False) for name in load_bearing)
+    return all(filters.get(name, False) for name in knockouts)
 
 
 _SMALL_HINTS = re.compile(r"family[- ]owned|family[- ]run|owner[- ]operated", re.I)

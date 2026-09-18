@@ -92,7 +92,7 @@ def name_tokens(name: str) -> set[str]:
 def vendor_pattern(name: str) -> str:
     """A LIKE pattern from a company's distinctive words, in order: "%VAL%MATIC%".
 
-    Used only to *retrieve* candidate records. Procurement systems punctuate and
+    Used only to retrieve candidate records. Procurement systems punctuate and
     abbreviate names differently, so the pattern is deliberately broad; the precise
     decision is made by `match_vendor`.
     """
@@ -103,7 +103,7 @@ def vendor_pattern(name: str) -> str:
 def match_vendor(vendor: str, companies: dict[str, str]) -> str | None:
     """account_id of the listed company a purchase record's vendor refers to, or None.
 
-    A vendor matches only when it contains *every* word of the company's name
+    A vendor matches only when it contains every word of the company's name
     (after suffixes, filler, abbreviations, and plurals are normalized), so
     "VAL-MATIC VALVE & MFG CORP" matches "Val-Matic Valve & Mfg. Corp." but
     "DDB CHICAGO INC" does not match "Chicago Valves & Controls" and "MEMORIAL
@@ -127,7 +127,7 @@ def match_vendor(vendor: str, companies: dict[str, str]) -> str | None:
 
 
 def buyer_label(p: dict[str, Any]) -> str:
-    """"Department of Defense / Defense Logistics Agency": the unit is who actually buys."""
+    """"Department of Defense / Defense Logistics Agency": the unit is the buyer."""
     unit = (p.get("buyer_unit") or "").strip()
     return p["buyer"] if not unit or unit.lower() == p["buyer"].lower() else f"{p['buyer']} / {unit}"
 

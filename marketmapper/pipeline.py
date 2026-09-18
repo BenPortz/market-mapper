@@ -198,9 +198,9 @@ def filter_search(name: str, block: dict[str, Any], profile: Profile, run_date: 
         acct["filters"] = mf.evaluate(acct, search, profile.filters)
         acct["tech_status"] = mf.tech_statuses(acct, search)
         acct["seen_recent"] = use_dedup and seen_in(acct["name"], recent_blob)
-        load_bearing = profile.load_bearing + (["tech_ok"] if (search.get("tech_absent") or search.get("tech_present"))
-                                               and "tech_ok" not in profile.load_bearing else [])
-        acct["passed"] = mf.passed(acct["filters"], load_bearing) and not acct["seen_recent"]
+        knockouts = profile.knockouts + (["tech_ok"] if (search.get("tech_absent") or search.get("tech_present"))
+                                               and "tech_ok" not in profile.knockouts else [])
+        acct["passed"] = mf.passed(acct["filters"], knockouts) and not acct["seen_recent"]
         acct["score"] = mf.score(acct, search)
         _for_judge(acct)
 

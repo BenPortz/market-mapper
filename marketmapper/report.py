@@ -9,8 +9,8 @@ Outputs per search, under `data/exports/<date>/`:
     <search>-queue.csv      drafts only, every row status=draft
 
 A top-N search exports the accounts the judge kept. A market map exports every
-account that passed the filters, minus any the judge rejected as not actually
-in the market.
+account that passed the filters, minus any the judge rejected as not in
+the market.
 
 Verdicts are optional: a market map with `judge.limit: 0` renders from the
 accounts file alone.
@@ -288,7 +288,7 @@ def render_section(name: str, block: dict[str, Any], verdict: dict[str, Any] | N
             lines.append(render_market_table(rows))
         if verdict and verdict.get("rejected"):
             n = len(verdict["rejected"])
-            lines.append(f"_Removed by the judge as not actually in this market ({n}):_")
+            lines.append(f"_Removed by the judge as not in this market ({n}):_")
             lines.extend(f"- {r.get('name', r['account_id'])}: {r['reason']}" for r in verdict["rejected"])
             lines.append("")
     if buyer_text:

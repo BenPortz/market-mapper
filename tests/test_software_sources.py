@@ -209,9 +209,9 @@ def test_tech_present_filter():
     assert f.tech_ok(acct, {"tech_present": ["scheduler"]}) is False
 
 
-def test_tech_rules_bind_even_with_an_explicit_load_bearing_list():
+def test_tech_rules_bind_even_with_an_explicit_knockouts_list():
     from marketmapper.config import Profile
-    profile = Profile(context=[], dedup={}, http={}, filters={"load_bearing": ["in_region"]},
+    profile = Profile(context=[], dedup={}, http={}, filters={"knockouts": ["in_region"]},
                       searches={"s": {"goal": "market_map", "region": {"countries": ["US"]},
                                       "tech_absent": ["chat"]}})
     rec = {"record_id": "yc:a", "source": "yc_directory", "name": "Ledgerly", "website": "https://l.example",
@@ -236,8 +236,8 @@ def test_widget_markup_counts_but_only_in_ids_and_classes():
     markup = page(body='<div class="intercom-lightweight-app"><div class="intercom-lightweight-app-launcher"></div></div>'
                        + "<p>word</p>" * 60)
     assert t.detect([markup]) == ["chat:intercom"]
-    prose = page(body="<p>Our intercom-lightweight-app replacement is faster.</p>" * 30)
-    assert t.detect([prose]) == []
+    text_only = page(body="<p>Our intercom-lightweight-app replacement is faster.</p>" * 30)
+    assert t.detect([text_only]) == []
 
 
 def test_company_specific_scheduler_subdomain():

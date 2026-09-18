@@ -3,7 +3,7 @@
 Products that touch drinking water in North America are certified to NSF/ANSI 61
 (health effects) and usually NSF/ANSI 372 (lead content), and plumbing products
 to a family of related standards. The public listings name every certified
-company and, importantly, the *plant* where the product is made. A 15-person
+company and the plant where the product is made. A 15-person
 valve shop with no website to speak of still has to appear here to sell into
 potable water, so this finds small manufacturers that web search misses.
 

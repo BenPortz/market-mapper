@@ -25,7 +25,7 @@ DEFAULT_PROFILE = Path("config/profile.yaml")
 EXAMPLE_PROFILE = Path("config/profile.example.yaml")
 
 GOALS = ("top_n", "market_map")
-DEFAULT_LOAD_BEARING = ["in_region", "relevant", "no_exclude_terms", "not_excluded",
+DEFAULT_KNOCKOUTS = ["in_region", "relevant", "no_exclude_terms", "not_excluded",
                         "signal_ok", "has_website", "tech_ok"]
 
 
@@ -80,8 +80,8 @@ class Profile:
         return bool(self.search(name).get("dedup", self.goal(name) == "top_n"))
 
     @property
-    def load_bearing(self) -> list[str]:
-        return self.filters.get("load_bearing", DEFAULT_LOAD_BEARING)
+    def knockouts(self) -> list[str]:
+        return self.filters.get("knockouts", DEFAULT_KNOCKOUTS)
 
     @property
     def dedup_days(self) -> int:

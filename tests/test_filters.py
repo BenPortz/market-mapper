@@ -133,7 +133,7 @@ def test_duplicate_registry_entries_do_not_double_count():
 
 # --- filters --------------------------------------------------------------
 
-LOAD_BEARING = ["in_region", "relevant", "no_exclude_terms", "not_excluded", "signal_ok", "has_website"]
+KNOCKOUTS = ["in_region", "relevant", "no_exclude_terms", "not_excluded", "signal_ok", "has_website"]
 SEARCH = {"include_any": ["conveyor"], "exclude_any": ["used conveyor"], "min_signals": 0}
 GOOD = {"name": "Lakeshore Conveyor", "domain": "lakeshore.example",
         "website": "https://lakeshore.example/", "categories": [], "evidence": [],
@@ -143,7 +143,7 @@ GOOD = {"name": "Lakeshore Conveyor", "domain": "lakeshore.example",
 def test_clean_account_passes():
     result = f.evaluate(GOOD, SEARCH, {})
     assert all(result.values())
-    assert f.passed(result, LOAD_BEARING)
+    assert f.passed(result, KNOCKOUTS)
 
 
 def test_irrelevant_account_fails():
@@ -195,9 +195,9 @@ def test_min_signals_and_require_website():
     assert result["signal_ok"] is False and result["has_website"] is False
 
 
-def test_filter_outside_load_bearing_is_reported_not_fatal():
+def test_filter_outside_knockouts_is_reported_not_fatal():
     result = f.evaluate({**GOOD, "website": None}, {**SEARCH, "require_website": True}, {})
-    assert f.passed(result, [k for k in LOAD_BEARING if k != "has_website"])
+    assert f.passed(result, [k for k in KNOCKOUTS if k != "has_website"])
 
 
 def test_score_ranks_signals_above_keywords():

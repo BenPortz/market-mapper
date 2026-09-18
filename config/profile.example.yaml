@@ -35,9 +35,9 @@ filters:
   exclude_domains:
     - "example-competitor.com"
 
-  # Which filters actually drop an account. Evaluated filters not listed here
+  # Which filters drop an account. Evaluated filters not listed here
   # are reported to the judge as information, not knockouts.
-  load_bearing: [in_region, relevant, no_exclude_terms, not_excluded, signal_ok, has_website]
+  knockouts: [in_region, relevant, no_exclude_terms, not_excluded, signal_ok, has_website]
 
 # --- Searches --------------------------------------------------------------
 searches:
